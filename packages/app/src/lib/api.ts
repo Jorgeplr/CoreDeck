@@ -1,8 +1,10 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:3001/api",
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
@@ -20,22 +22,20 @@ let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: un
 
 function processQueue(error: unknown, token: string | null = null) {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
   failedQueue = [];
 }
 
-// Silent refresh on 401
+// Silent refresh on 401 — skips the refresh endpoint itself to avoid infinite loop
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isRefreshEndpoint = originalRequest?.url?.includes("/auth/refresh");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isRefreshEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -50,7 +50,7 @@ api.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL ?? "http://localhost:3001/api"}/auth/refresh`,
+          `${BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -63,7 +63,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         useAuthStore.getState().logout();
-        window.location.href = "/login";
+        window.dispatchEvent(new CustomEvent("auth:logout"));
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
