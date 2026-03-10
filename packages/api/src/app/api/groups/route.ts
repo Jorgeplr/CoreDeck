@@ -25,14 +25,29 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const existing = await prisma.group.findUnique({ where: { slug: parsed.data.slug } });
+  const slug =
+    parsed.data.slug ??
+    parsed.data.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .substring(0, 40) +
+      "-" +
+      Date.now().toString(36);
+
+  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const existing = await prisma.group.findUnique({ where: { slug } });
   if (existing) {
     return NextResponse.json({ error: "Slug already in use" }, { status: 409 });
   }
 
   const group = await prisma.group.create({
     data: {
-      ...parsed.data,
+      name: parsed.data.name,
+      description: parsed.data.description,
+      slug,
+      inviteCode,
       members: {
         create: { userId: user.sub, role: "OWNER" },
       },

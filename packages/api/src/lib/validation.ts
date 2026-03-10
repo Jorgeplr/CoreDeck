@@ -21,10 +21,15 @@ export const createGroupSchema = z.object({
     .string()
     .min(2)
     .max(40)
-    .regex(/^[a-z0-9-]+$/),
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
 });
 
 export const updateGroupSchema = createGroupSchema.partial();
+
+export const joinGroupSchema = z.object({
+  inviteCode: z.string().min(4).max(10),
+});
 
 export const inviteMemberSchema = z.object({
   email: z.string().email(),
@@ -66,6 +71,10 @@ export const createLabelSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .default("#6b7280"),
+});
+
+export const createCommentSchema = z.object({
+  content: z.string().min(1).max(2000),
 });
 
 // Context

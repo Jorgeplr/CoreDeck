@@ -27,6 +27,7 @@ model User {
   assignedTickets Ticket[]       @relation("AssignedTickets")
   createdTickets  Ticket[]       @relation("CreatedTickets")
   ticketHistory   TicketHistory[]
+  ticketComments  TicketComment[]
   notes           Note[]
   reminders       Reminder[]
 
@@ -54,6 +55,7 @@ model Group {
   name        String
   description String?
   slug        String   @unique
+  inviteCode  String   @unique @db.VarChar(10)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -135,8 +137,9 @@ model Ticket {
   assignedTo User?  @relation("AssignedTickets", fields: [assignedToId], references: [id])
   group      Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
-  history TicketHistory[]
-  labels  TicketLabel[]
+  history  TicketHistory[]
+  labels   TicketLabel[]
+  comments TicketComment[]
 
   @@index([createdById])
   @@index([assignedToId])
@@ -180,6 +183,21 @@ model TicketLabel {
 
   @@id([ticketId, labelId])
   @@map("ticket_labels")
+}
+
+model TicketComment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_comments")
 }
 
 enum TicketStatus {

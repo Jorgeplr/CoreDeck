@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
+import { useUiStore } from "@/store/uiStore";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import AppShell from "@/components/layout/AppShell";
 import LoginPage from "@/modules/auth/pages/LoginPage";
@@ -13,6 +14,7 @@ import TicketDetailPage from "@/modules/flow/pages/TicketDetailPage";
 import CreateTicketPage from "@/modules/flow/pages/CreateTicketPage";
 import ContextPage from "@/modules/context/pages/ContextPage";
 import NoteDetailPage from "@/modules/context/pages/NoteDetailPage";
+import GroupDetailPage from "@/modules/groups/pages/GroupDetailPage";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
@@ -44,9 +46,18 @@ function AuthInit() {
   return null;
 }
 
+function ThemeSync() {
+  const theme = useUiStore((s) => s.theme);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeSync />
       <AuthInit />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -62,6 +73,7 @@ export default function App() {
             <Route path="/flow/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/context" element={<ContextPage />} />
             <Route path="/context/notes/:id" element={<NoteDetailPage />} />
+            <Route path="/groups/:id" element={<GroupDetailPage />} />
           </Route>
         </Route>
 

@@ -3,11 +3,31 @@ import type { Ticket, TicketStatus } from "@/types";
 import TicketCard from "./TicketCard";
 import { flowApi } from "../api/flowApi";
 
-const COLUMNS: { status: TicketStatus; label: string; color: string }[] = [
-  { status: "OPEN", label: "Abierto", color: "bg-slate-100 dark:bg-slate-800/60" },
-  { status: "IN_PROGRESS", label: "En progreso", color: "bg-blue-50 dark:bg-blue-950/30" },
-  { status: "IN_REVIEW", label: "En revisión", color: "bg-yellow-50 dark:bg-yellow-950/30" },
-  { status: "RESOLVED", label: "Resuelto", color: "bg-green-50 dark:bg-green-950/30" },
+const COLUMNS: { status: TicketStatus; label: string; bg: string; dot: string }[] = [
+  {
+    status: "OPEN",
+    label: "Abierto",
+    bg: "bg-gray-100 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700",
+    dot: "bg-gray-400 dark:bg-gray-500",
+  },
+  {
+    status: "IN_PROGRESS",
+    label: "En progreso",
+    bg: "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50",
+    dot: "bg-blue-500",
+  },
+  {
+    status: "IN_REVIEW",
+    label: "En revisión",
+    bg: "bg-amber-50 dark:bg-yellow-950/30 border border-amber-200 dark:border-amber-900/50",
+    dot: "bg-amber-500",
+  },
+  {
+    status: "RESOLVED",
+    label: "Resuelto",
+    bg: "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50",
+    dot: "bg-green-500",
+  },
 ];
 
 interface Props {
@@ -31,16 +51,19 @@ export default function KanbanBoard({ tickets }: Props) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-      {COLUMNS.map(({ status, label, color }) => (
+      {COLUMNS.map(({ status, label, bg, dot }) => (
         <div
           key={status}
-          className={`${color} rounded-xl p-3 min-h-48`}
+          className={`${bg} rounded-xl p-3 min-h-48`}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => handleDrop(e, status)}
         >
           <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">{label}</span>
-            <span className="text-xs text-gray-400 dark:text-slate-500 bg-white dark:bg-slate-700 rounded-full px-2 py-0.5">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${dot}`} />
+              <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">{label}</span>
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-slate-500 bg-white dark:bg-slate-700 rounded-full px-2 py-0.5 border border-gray-200 dark:border-slate-600">
               {byStatus(status).length}
             </span>
           </div>

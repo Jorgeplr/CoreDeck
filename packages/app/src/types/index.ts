@@ -16,6 +16,7 @@ export interface Group {
   name: string;
   description: string | null;
   slug: string;
+  inviteCode: string;
   createdAt: string;
   _count?: { members: number; tickets?: number; notes?: number };
   members?: Array<{ role: GroupRole }>;
@@ -85,6 +86,16 @@ export interface Ticket {
   assignedTo: Pick<User, "id" | "username" | "displayName" | "avatarUrl"> | null;
   labels: Array<{ label: Label }>;
   _count?: { history: number };
+}
+
+export interface TicketComment {
+  id: string;
+  ticketId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user: Pick<User, "id" | "username" | "displayName" | "avatarUrl">;
 }
 
 export interface TicketHistoryEntry {

@@ -51,12 +51,22 @@ export const PATCH = withAuth<Promise<Params>>(async (req: NextRequest, { params
   if (!existing) return NextResponse.json({ error: "Not found or forbidden" }, { status: 404 });
 
   const body = await req.json();
-  const parsed = updateTicketSchema.safeParse(body);
+
+  // Extract assignedToId: null before schema validation (schema only allows string | undefined)
+  const assignedToIdNull = body.assignedToId === null;
+  const bodyForParsing = assignedToIdNull ? { ...body, assignedToId: undefined } : body;
+
+  const parsed = updateTicketSchema.safeParse(bodyForParsing);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const { labelIds, ...ticketData } = parsed.data;
+
+  // Re-apply explicit null to unassign
+  if (assignedToIdNull) {
+    (ticketData as Record<string, unknown>).assignedToId = null;
+  }
 
   // Track changes for history
   const historyEntries: { action: string; oldValue?: string; newValue?: string }[] = [];

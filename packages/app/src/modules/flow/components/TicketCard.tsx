@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, Users } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { es } from "date-fns/locale";
 import type { Ticket, TicketPriority } from "@/types";
@@ -36,7 +36,7 @@ export default function TicketCard({ ticket }: Props) {
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1">
           {ticket.title}
         </h3>
-        <span className={clsx("text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0", PRIORITY_COLORS[ticket.priority])}>
+        <span className={clsx("text-xs px-2 py-0.5 rounded-full font-medium shrink-0", PRIORITY_COLORS[ticket.priority])}>
           {PRIORITY_LABELS[ticket.priority]}
         </span>
       </div>
@@ -62,14 +62,19 @@ export default function TicketCard({ ticket }: Props) {
       )}
 
       <div className="flex items-center justify-between text-xs text-gray-400 dark:text-slate-500">
-        {ticket.assignedTo ? (
-          <div className="flex items-center gap-1">
-            <User size={12} />
-            <span>{ticket.assignedTo.displayName ?? ticket.assignedTo.username}</span>
-          </div>
-        ) : (
-          <span />
-        )}
+        <div className="flex items-center gap-2">
+          {ticket.scope === "GROUP" && (
+            <div className="flex items-center gap-1 text-primary-500">
+              <Users size={12} />
+            </div>
+          )}
+          {ticket.assignedTo ? (
+            <div className="flex items-center gap-1">
+              <User size={12} />
+              <span>{ticket.assignedTo.displayName ?? ticket.assignedTo.username}</span>
+            </div>
+          ) : null}
+        </div>
         {ticket.dueDate && (
           <div className={clsx("flex items-center gap-1", overdue && "text-red-500")}>
             <Calendar size={12} />

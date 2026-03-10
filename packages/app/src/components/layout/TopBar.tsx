@@ -7,7 +7,7 @@ export default function TopBar() {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <header className="h-14 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 flex-shrink-0">
+    <header className="h-14 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 shrink-0">
       <div />
       <div className="flex items-center gap-4">
         <button

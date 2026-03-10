@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
 import { authApi } from "../api/authApi";
 
 export default function RegisterPage() {
@@ -14,7 +13,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuth);
 
   const update = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [field]: e.target.value }));
@@ -24,9 +22,8 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const { accessToken, user } = await authApi.register(form);
-      setAuth(accessToken, user);
-      navigate("/vault");
+      await authApi.register(form);
+      navigate("/login");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
@@ -45,7 +42,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-primary-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary-600 text-white font-bold text-xl mb-4">

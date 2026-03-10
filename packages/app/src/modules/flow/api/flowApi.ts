@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { Ticket, TicketHistoryEntry, Label, TicketStatus, TicketPriority } from "@/types";
+import type { Ticket, TicketHistoryEntry, TicketComment, Label, TicketStatus, TicketPriority } from "@/types";
 
 export interface CreateTicketPayload {
   title: string;
@@ -36,4 +36,10 @@ export const flowApi = {
     api.get<TicketHistoryEntry[]>(`/flow/tickets/${id}/history`).then((r) => r.data),
 
   listLabels: () => api.get<Label[]>("/flow/labels").then((r) => r.data),
+
+  getComments: (ticketId: string) =>
+    api.get<TicketComment[]>(`/flow/tickets/${ticketId}/comments`).then((r) => r.data),
+
+  addComment: (ticketId: string, content: string) =>
+    api.post<TicketComment>(`/flow/tickets/${ticketId}/comments`, { content }).then((r) => r.data),
 };
