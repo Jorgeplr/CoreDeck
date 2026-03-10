@@ -1,0 +1,34 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: coredesk_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: coredesk_root
+      MYSQL_DATABASE: coredesk
+      MYSQL_USER: coredesk_user
+      MYSQL_PASSWORD: coredesk_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  mysql_shadow:
+    image: mysql:8.0
+    container_name: coredesk_mysql_shadow
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: coredesk_root
+      MYSQL_DATABASE: coredesk_shadow
+      MYSQL_USER: coredesk_user
+      MYSQL_PASSWORD: coredesk_pass
+    volumes:
+      - mysql_shadow_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+  mysql_shadow_data:
