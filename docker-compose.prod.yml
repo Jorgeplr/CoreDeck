@@ -1,0 +1,68 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: coredesk
+      MYSQL_USER: coredesk_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - coredesk
+
+  api:
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://coredesk_user:${MYSQL_PASSWORD}@mysql:3306/coredesk
+      # SHADOW_DATABASE_URL not needed in production (migrate deploy doesn't use it)
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_DAYS: 7
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      NODE_ENV: production
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      EMAIL_FROM: ${EMAIL_FROM:-"CoreDesk <noreply@coredesk.app>"}
+      REMINDER_CHECK_CRON: "*/15 * * * *"
+      REMINDER_NOTIFY_HOURS_BEFORE: 24
+    ports:
+      - "3001:3001"
+    networks:
+      - coredesk
+
+  app:
+    build:
+      context: ./packages/app
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      - coredesk
+
+networks:
+  coredesk:
+    driver: bridge
+
+volumes:
+  mysql_data:

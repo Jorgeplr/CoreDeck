@@ -15,6 +15,7 @@ import CreateTicketPage from "@/modules/flow/pages/CreateTicketPage";
 import ContextPage from "@/modules/context/pages/ContextPage";
 import NoteDetailPage from "@/modules/context/pages/NoteDetailPage";
 import GroupDetailPage from "@/modules/groups/pages/GroupDetailPage";
+import ProfilePage from "@/modules/auth/pages/ProfilePage";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/context" element={<ContextPage />} />
             <Route path="/context/notes/:id" element={<NoteDetailPage />} />
             <Route path="/groups/:id" element={<GroupDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>
 

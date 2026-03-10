@@ -8,9 +8,11 @@ import PasswordGenerator from "./PasswordGenerator";
 interface Props {
   onClose: () => void;
   onCreated: () => void;
+  defaultScope?: "PERSONAL" | "GROUP";
+  defaultGroupId?: string;
 }
 
-export default function PasswordForm({ onClose, onCreated }: Props) {
+export default function PasswordForm({ onClose, onCreated, defaultScope = "PERSONAL", defaultGroupId }: Props) {
   const masterKey = useVaultStore((s) => s.masterKey);
   const [form, setForm] = useState({ title: "", url: "", username: "", password: "", notes: "" });
   const [showGenerator, setShowGenerator] = useState(false);
@@ -41,7 +43,8 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
         passwordEncrypted,
         notesEncrypted,
         iv,
-        scope: "PERSONAL",
+        scope: defaultScope,
+        groupId: defaultScope === "GROUP" ? defaultGroupId : undefined,
       });
       onCreated();
     } catch {
@@ -50,6 +53,8 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
       setLoading(false);
     }
   };
+
+  const inputCls = "w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -83,7 +88,7 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
                 onChange={update(k)}
                 required={k === "title"}
                 placeholder={placeholder}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className={inputCls}
               />
             </div>
           ))}
@@ -94,7 +99,7 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
               <button
                 type="button"
                 onClick={() => setShowGenerator(!showGenerator)}
-                className="text-xs text-primary-600 hover:underline flex items-center gap-1"
+                className="text-xs text-amber-600 hover:underline flex items-center gap-1"
               >
                 <Wand2 size={12} />
                 Generar
@@ -106,7 +111,7 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
               onChange={update("password")}
               required
               placeholder="••••••••"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={inputCls}
             />
           </div>
 
@@ -126,7 +131,7 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
               onChange={update("notes")}
               rows={2}
               placeholder="Notas adicionales..."
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+              className={`${inputCls} resize-none`}
             />
           </div>
 
@@ -141,7 +146,7 @@ export default function PasswordForm({ onClose, onCreated }: Props) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+              className="flex-1 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white text-sm font-medium transition-colors"
             >
               {loading ? "Guardando..." : "Guardar"}
             </button>
