@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
@@ -17,26 +17,29 @@ import NoteDetailPage from "@/modules/context/pages/NoteDetailPage";
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
 function AuthInit() {
-  const { setAuth, logout } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const navigate = useNavigate();
+  const attempted = useRef(false);
 
+  // Silent refresh on startup — runs once, 401 is expected when no session exists
   useEffect(() => {
-    // Use plain axios (not api instance) to avoid triggering the 401 interceptor loop
+    if (attempted.current) return;
+    attempted.current = true;
+
     axios
       .post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true })
       .then(({ data }) => setAuth(data.accessToken, data.user))
-      .catch(() => logout());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch(() => {
+        // No session cookie — user is not logged in, stay on current page
+      });
+  }, [setAuth]);
 
-  // Listen for forced logout from interceptor
+  // Listen for forced logout dispatched by the Axios interceptor
   useEffect(() => {
-    const handler = () => {
-      logout();
-      navigate("/login", { replace: true });
-    };
+    const handler = () => navigate("/login", { replace: true });
     window.addEventListener("auth:logout", handler);
     return () => window.removeEventListener("auth:logout", handler);
-  }, [logout, navigate]);
+  }, [navigate]);
 
   return null;
 }
@@ -46,11 +49,9 @@ export default function App() {
     <BrowserRouter>
       <AuthInit />
       <Routes>
-        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/" element={<Navigate to="/vault" replace />} />
