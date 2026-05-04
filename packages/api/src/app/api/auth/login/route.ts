@@ -3,9 +3,22 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signAccessToken, createRefreshToken, setRefreshCookie } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rateLimiter";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown";
+
+    if (!checkRateLimit(`login:${ip}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: "Demasiados intentos, inténtalo en un minuto" },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
     if (!parsed.success) {
@@ -24,6 +37,7 @@ export async function POST(req: NextRequest) {
         avatarUrl: true,
         passwordHash: true,
         isActive: true,
+        emailVerified: true,
       },
     });
 
@@ -36,10 +50,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: "Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada." },
+        { status: 403 }
+      );
+    }
+
     const accessToken = signAccessToken({ sub: user.id, email: user.email, username: user.username });
     const refreshToken = await createRefreshToken(user.id);
 
-    const { passwordHash: _, ...safeUser } = user;
+    const { passwordHash: _, emailVerified: __, ...safeUser } = user;
     const res = NextResponse.json({ accessToken, user: safeUser });
     return setRefreshCookie(res, refreshToken);
   } catch (err) {

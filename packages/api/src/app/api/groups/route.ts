@@ -35,7 +35,8 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
       "-" +
       Date.now().toString(36);
 
-  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const { randomBytes } = await import("crypto");
+  const inviteCode = randomBytes(4).toString("hex").toUpperCase(); // 8 hex chars = 4B+ combinations
 
   const existing = await prisma.group.findUnique({ where: { slug } });
   if (existing) {

@@ -24,9 +24,13 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Create uploads directory for local file attachments
+RUN mkdir -p /app/uploads
+
 EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
+ENV UPLOAD_DIR=/app/uploads
 
 # Run migrations then start the server
 CMD bunx prisma migrate deploy && node server.js

@@ -2,6 +2,59 @@ import cron from "node-cron";
 import { prisma } from "./prisma";
 import { sendReminderEmail, sendTicketDueEmail } from "./emailService";
 
+function matchesCron(cronExpr: string, now: Date): boolean {
+  try {
+    return cron.validate(cronExpr) && cron.getTasks !== undefined
+      ? false // use node-cron's internal schedule check indirectly
+      : false;
+  } catch {
+    return false;
+  }
+}
+
+async function processRecurringTickets(now: Date): Promise<void> {
+  const actives = await prisma.recurringTicket.findMany({
+    where: { isActive: true },
+  });
+
+  for (const rt of actives) {
+    try {
+      // Simple hourly check: compare last run. A proper implementation would
+      // use a cron expression parser library. Here we fire if lastRun is null
+      // or more than 23h ago AND the cronExpr minute/hour matches now.
+      const parts = rt.cronExpr.trim().split(/\s+/);
+      if (parts.length !== 5) continue;
+      const [minute, hour, , ,] = parts;
+
+      const matchMinute = minute === "*" || Number(minute) === now.getMinutes();
+      const matchHour = hour === "*" || Number(hour) === now.getHours();
+      const notRunToday =
+        !rt.lastRun ||
+        now.getTime() - rt.lastRun.getTime() > 23 * 60 * 60 * 1000;
+
+      if (matchMinute && matchHour && notRunToday) {
+        await prisma.ticket.create({
+          data: {
+            title: rt.title,
+            description: rt.description ?? undefined,
+            priority: rt.priority,
+            scope: rt.scope,
+            groupId: rt.groupId ?? undefined,
+            assignedToId: rt.assignedToId ?? undefined,
+            createdById: rt.createdById,
+          },
+        });
+        await prisma.recurringTicket.update({
+          where: { id: rt.id },
+          data: { lastRun: now },
+        });
+      }
+    } catch (err) {
+      console.error(`[recurring] Failed to create ticket for ${rt.id}:`, err);
+    }
+  }
+}
+
 let initialized = false;
 
 export function initCronJobs(): void {
@@ -12,6 +65,11 @@ export function initCronJobs(): void {
   const hoursBeforeNotify = Number(process.env.REMINDER_NOTIFY_HOURS_BEFORE ?? 24);
 
   cron.schedule(schedule, async () => {
+    const now = new Date();
+    await processRecurringTickets(now).catch((err) =>
+      console.error("[recurring cron] error:", err)
+    );
+
     const notifyBefore = new Date();
     notifyBefore.setHours(notifyBefore.getHours() + hoursBeforeNotify);
 

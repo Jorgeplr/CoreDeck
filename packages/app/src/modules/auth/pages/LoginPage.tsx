@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, MailWarning, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "../api/authApi";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,24 +11,43 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "sending" | "sent">("idle");
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setNeedsVerification(false);
+    setResendStatus("idle");
     setLoading(true);
     try {
       const { accessToken, user } = await authApi.login(email, password);
       setAuth(accessToken, user);
       navigate("/vault");
     } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
         "Error al iniciar sesión";
+
+      if (status === 403) {
+        setNeedsVerification(true);
+      }
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendStatus("sending");
+    try {
+      await api.post("/auth/resend-verification", { email });
+      setResendStatus("sent");
+    } catch {
+      setResendStatus("idle");
     }
   };
 
@@ -47,8 +67,33 @@ export default function LoginPage() {
           className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 space-y-5"
         >
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-lg">
-              {error}
+            <div className={`text-sm px-4 py-3 rounded-lg space-y-2 ${
+              needsVerification
+                ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+            }`}>
+              <div className="flex items-start gap-2">
+                {needsVerification && <MailWarning size={16} className="shrink-0 mt-0.5" />}
+                <p>{error}</p>
+              </div>
+
+              {needsVerification && (
+                resendStatus === "sent" ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    ✓ Email reenviado — revisa tu bandeja de entrada
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendStatus === "sending"}
+                    className="flex items-center gap-1.5 text-xs font-medium underline underline-offset-2 hover:no-underline disabled:opacity-60"
+                  >
+                    <RefreshCw size={12} className={resendStatus === "sending" ? "animate-spin" : ""} />
+                    {resendStatus === "sending" ? "Enviando..." : "Reenviar email de verificación"}
+                  </button>
+                )
+              )}
             </div>
           )}
 

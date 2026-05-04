@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { Group, GroupMember } from "@/types";
+import type { Group, GroupMember, GroupRole } from "@/types";
 
 export const groupsApi = {
   listGroups: () => api.get<Group[]>("/groups").then((r) => r.data),
@@ -17,6 +17,12 @@ export const groupsApi = {
 
   getMembers: (groupId: string) =>
     api.get<GroupMember[]>(`/groups/${groupId}/members`).then((r) => r.data),
+
+  addMember: (groupId: string, email: string, role: GroupRole = "MEMBER") =>
+    api.post<GroupMember>(`/groups/${groupId}/members`, { email, role }).then((r) => r.data),
+
+  updateMemberRole: (groupId: string, userId: string, role: GroupRole) =>
+    api.patch<GroupMember>(`/groups/${groupId}/members`, { userId, role }).then((r) => r.data),
 
   removeMember: (groupId: string, userId: string) =>
     api.delete(`/groups/${groupId}/members`, { data: { userId } }),

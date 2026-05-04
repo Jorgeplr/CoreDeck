@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { User, KeyRound, ArrowLeft, Check, AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
+import { useVaultStore } from "@/store/vaultStore";
 import { api } from "@/lib/api";
+import { deriveMasterKey, encryptField, decryptField } from "@/lib/crypto";
+import { vaultApi } from "@/modules/vault/api/vaultApi";
 
 interface UpdateProfilePayload {
   displayName?: string;
@@ -13,6 +16,13 @@ interface UpdateProfilePayload {
 interface ChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
+  reEncryptedEntries?: Array<{
+    id: string;
+    usernameEncrypted?: string;
+    passwordEncrypted: string;
+    notesEncrypted?: string;
+    iv: string;
+  }>;
 }
 
 function Alert({ type, msg }: { type: "success" | "error"; msg: string }) {
@@ -33,6 +43,7 @@ export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const setAuth = useAuthStore((s) => s.setAuth);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const masterKey = useVaultStore((s) => s.masterKey);
 
   const [profileForm, setProfileForm] = useState({
     displayName: user?.displayName ?? "",
@@ -78,13 +89,50 @@ export default function ProfilePage() {
     profileMutation.mutate(payload);
   };
 
-  const handlePassword = (e: FormEvent) => {
+  const handlePassword = async (e: FormEvent) => {
     e.preventDefault();
     if (pwForm.newPassword !== pwForm.confirmPassword) {
       setPwMsg({ type: "error", msg: "Las contraseñas nuevas no coinciden." });
       return;
     }
-    pwMutation.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+
+    const payload: ChangePasswordPayload = {
+      currentPassword: pwForm.currentPassword,
+      newPassword: pwForm.newPassword,
+    };
+
+    // If the vault is unlocked, re-encrypt all personal entries with the new master key
+    if (masterKey && user) {
+      try {
+        const entries = await vaultApi.list("PERSONAL");
+        const oldKey = masterKey;
+        const newKey = await deriveMasterKey(pwForm.newPassword, user.id);
+
+        const reEncryptedEntries = await Promise.all(
+          entries.map(async (entry) => {
+            const [pw, uname, notes] = await Promise.all([
+              decryptField(entry.passwordEncrypted, entry.iv, oldKey),
+              entry.usernameEncrypted
+                ? decryptField(entry.usernameEncrypted, entry.iv, oldKey)
+                : Promise.resolve(""),
+              entry.notesEncrypted
+                ? decryptField(entry.notesEncrypted, entry.iv, oldKey)
+                : Promise.resolve(""),
+            ]);
+            const { ciphertext: passwordEncrypted, iv } = await encryptField(pw, newKey);
+            const { ciphertext: usernameEncrypted } = await encryptField(uname, newKey);
+            const { ciphertext: notesEncrypted } = await encryptField(notes, newKey);
+            return { id: entry.id, passwordEncrypted, usernameEncrypted, notesEncrypted, iv };
+          })
+        );
+        payload.reEncryptedEntries = reEncryptedEntries;
+      } catch {
+        setPwMsg({ type: "error", msg: "Error al re-encriptar el vault. Asegúrate de que está desbloqueado." });
+        return;
+      }
+    }
+
+    pwMutation.mutate(payload);
   };
 
   const inputCls = "w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";

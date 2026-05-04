@@ -33,7 +33,11 @@ export const joinGroupSchema = z.object({
 
 export const inviteMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
+  role: z.enum(["ADMIN", "MEMBER", "VIEWER"]).default("MEMBER"),
+});
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(["ADMIN", "MEMBER", "VIEWER"]),
 });
 
 // Vault
@@ -75,6 +79,27 @@ export const createLabelSchema = z.object({
 
 export const createCommentSchema = z.object({
   content: z.string().min(1).max(2000),
+});
+
+export const createRecurringTicketSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional(),
+  priority: z.enum(["CRITICAL", "URGENT", "NORMAL", "LOW"]).default("NORMAL"),
+  scope: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
+  groupId: z.string().optional(),
+  assignedToId: z.string().optional(),
+  cronExpr: z.string().min(1), // e.g. "0 9 * * 1"
+  isActive: z.boolean().default(true),
+});
+
+export const createTemplateSchema = z.object({
+  name: z.string().min(1).max(80),
+  description: z.string().max(300).optional(),
+  title: z.string().min(1).max(200),
+  body: z.string().optional(),
+  priority: z.enum(["CRITICAL", "URGENT", "NORMAL", "LOW"]).default("NORMAL"),
+  scope: z.enum(["INDIVIDUAL", "GROUP"]).default("INDIVIDUAL"),
+  groupId: z.string().optional(),
 });
 
 // Context

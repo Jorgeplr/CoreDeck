@@ -1,11 +1,20 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Users } from "lucide-react";
+import { ArrowLeft, User, Users, LayoutTemplate } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { flowApi } from "../api/flowApi";
 import { groupsApi } from "@/modules/groups/api/groupsApi";
+import { api } from "@/lib/api";
 import type { TicketPriority, TicketScope, TicketStatus } from "@/types";
 import clsx from "clsx";
+
+interface TicketTemplate {
+  id: string;
+  name: string;
+  title: string;
+  body?: string | null;
+  priority: TicketPriority;
+}
 
 export default function CreateTicketPage() {
   const navigate = useNavigate();
@@ -25,6 +34,20 @@ export default function CreateTicketPage() {
     queryKey: ["groups"],
     queryFn: groupsApi.listGroups,
   });
+
+  const { data: templates = [] } = useQuery<TicketTemplate[]>({
+    queryKey: ["flow", "templates"],
+    queryFn: () => api.get("/flow/templates").then((r) => r.data),
+  });
+
+  const applyTemplate = (tpl: TicketTemplate) => {
+    setForm((p) => ({
+      ...p,
+      title: tpl.title,
+      description: tpl.body ?? "",
+      priority: tpl.priority,
+    }));
+  };
 
   const { data: members = [] } = useQuery({
     queryKey: ["groups", form.groupId, "members"],
@@ -68,6 +91,27 @@ export default function CreateTicketPage() {
         </button>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Nuevo ticket</h1>
       </div>
+
+      {templates.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow p-4">
+          <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
+            <LayoutTemplate size={13} />
+            Usar plantilla
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:border-primary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              >
+                {tpl.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl shadow p-6 space-y-5">
         {/* Scope selector */}

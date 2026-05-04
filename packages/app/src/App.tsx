@@ -13,9 +13,11 @@ import FlowPage from "@/modules/flow/pages/FlowPage";
 import TicketDetailPage from "@/modules/flow/pages/TicketDetailPage";
 import CreateTicketPage from "@/modules/flow/pages/CreateTicketPage";
 import ContextPage from "@/modules/context/pages/ContextPage";
+import DashboardPage from "@/modules/flow/pages/DashboardPage";
 import NoteDetailPage from "@/modules/context/pages/NoteDetailPage";
 import GroupDetailPage from "@/modules/groups/pages/GroupDetailPage";
 import ProfilePage from "@/modules/auth/pages/ProfilePage";
+import VerifyEmailPage from "@/modules/auth/pages/VerifyEmailPage";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
@@ -63,6 +65,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
@@ -70,6 +73,7 @@ export default function App() {
             <Route path="/vault" element={<VaultPage />} />
             <Route path="/vault/unlock" element={<VaultUnlockPage />} />
             <Route path="/flow" element={<FlowPage />} />
+            <Route path="/flow/dashboard" element={<DashboardPage />} />
             <Route path="/flow/tickets/new" element={<CreateTicketPage />} />
             <Route path="/flow/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/context" element={<ContextPage />} />

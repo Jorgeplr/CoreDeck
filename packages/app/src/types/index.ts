@@ -9,7 +9,7 @@ export interface User {
 }
 
 // Groups
-export type GroupRole = "OWNER" | "ADMIN" | "MEMBER";
+export type GroupRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
 
 export interface Group {
   id: string;

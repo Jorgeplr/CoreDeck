@@ -1,12 +1,15 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, User, Users, Kanban, SlidersHorizontal, X } from "lucide-react";
+import { Plus, User, Users, Kanban, SlidersHorizontal, X, Table2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { flowApi } from "../api/flowApi";
 import { groupsApi } from "@/modules/groups/api/groupsApi";
 import KanbanBoard from "../components/KanbanBoard";
+import TicketTable from "../components/TicketTable";
 import clsx from "clsx";
 import type { Group, TicketPriority, Label } from "@/types";
+
+type DisplayMode = "kanban" | "table";
 
 type ViewMode = "personal" | "group";
 
@@ -20,6 +23,7 @@ const PRIORITIES: { value: TicketPriority; label: string; color: string }[] = [
 export default function FlowPage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>("personal");
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("kanban");
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -98,6 +102,34 @@ export default function FlowPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Display mode toggle */}
+          <div className="flex rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <button
+              onClick={() => setDisplayMode("kanban")}
+              className={clsx(
+                "px-3 py-2 flex items-center gap-1.5 text-sm transition-colors",
+                displayMode === "kanban"
+                  ? "bg-primary-600 text-white"
+                  : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700"
+              )}
+              title="Vista Kanban"
+            >
+              <Kanban size={15} />
+            </button>
+            <button
+              onClick={() => setDisplayMode("table")}
+              className={clsx(
+                "px-3 py-2 flex items-center gap-1.5 text-sm transition-colors border-l border-gray-200 dark:border-slate-700",
+                displayMode === "table"
+                  ? "bg-primary-600 text-white"
+                  : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700"
+              )}
+              title="Vista tabla"
+            >
+              <Table2 size={15} />
+            </button>
+          </div>
+
           <button
             onClick={() => setShowFilters((p) => !p)}
             className={clsx(
@@ -237,11 +269,13 @@ export default function FlowPage() {
         </div>
       )}
 
-      {/* Board */}
+      {/* Board / Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-gray-400">Cargando tickets...</div>
-      ) : (
+      ) : displayMode === "kanban" ? (
         <KanbanBoard tickets={filteredTickets} />
+      ) : (
+        <TicketTable tickets={filteredTickets} />
       )}
     </div>
   );

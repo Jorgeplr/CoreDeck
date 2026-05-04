@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Shield, Kanban, Bell, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { Shield, Kanban, Bell, ChevronLeft, ChevronRight, LogOut, BarChart2 } from "lucide-react";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import { useVaultStore } from "@/store/vaultStore";
@@ -9,7 +9,8 @@ import clsx from "clsx";
 
 const NAV_ITEMS = [
   { to: "/vault", label: "Vault", icon: Shield },
-  { to: "/flow", label: "Flow", icon: Kanban },
+  { to: "/flow", label: "Flow", icon: Kanban, end: true },
+  { to: "/flow/dashboard", label: "Dashboard", icon: BarChart2 },
   { to: "/context", label: "Context", icon: Bell },
 ];
 
@@ -49,10 +50,11 @@ export default function Sidebar() {
       {/* Navigation + Groups (scrollable middle area) */}
       <div className="flex-1 flex flex-col overflow-y-auto">
         <nav className="py-4 space-y-1 px-2">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
+              end={end}
               className={({ isActive }) =>
                 clsx(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",

@@ -11,25 +11,32 @@ datasource db {
 // ─── AUTH & USERS ──────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
-  passwordHash String
-  displayName  String?
-  avatarUrl    String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  username            String    @unique
+  passwordHash        String
+  displayName         String?
+  avatarUrl           String?
+  isActive            Boolean   @default(true)
+  emailVerified       Boolean   @default(false)
+  emailVerifyToken    String?   @unique @db.VarChar(200)
+  emailVerifyExpires  DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  refreshTokens   RefreshToken[]
-  groupMembers    GroupMember[]
-  vaultEntries    VaultEntry[]
-  assignedTickets Ticket[]       @relation("AssignedTickets")
-  createdTickets  Ticket[]       @relation("CreatedTickets")
-  ticketHistory   TicketHistory[]
-  ticketComments  TicketComment[]
-  notes           Note[]
-  reminders       Reminder[]
+  refreshTokens      RefreshToken[]
+  groupMembers       GroupMember[]
+  vaultEntries       VaultEntry[]
+  assignedTickets    Ticket[]          @relation("AssignedTickets")
+  createdTickets     Ticket[]          @relation("CreatedTickets")
+  ticketHistory      TicketHistory[]
+  ticketComments     TicketComment[]
+  notes              Note[]
+  reminders          Reminder[]
+  attachments        Attachment[]
+  ticketTemplates    TicketTemplate[]
+  recurringTickets   RecurringTicket[] @relation("RecurringCreated")
+  recurringAssigned  RecurringTicket[] @relation("RecurringAssigned")
 
   @@map("users")
 }
@@ -59,10 +66,12 @@ model Group {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  members      GroupMember[]
-  vaultEntries VaultEntry[]
-  tickets      Ticket[]
-  notes        Note[]
+  members          GroupMember[]
+  vaultEntries     VaultEntry[]
+  tickets          Ticket[]
+  notes            Note[]
+  ticketTemplates  TicketTemplate[]
+  recurringTickets RecurringTicket[]
 
   @@map("groups")
 }
@@ -86,6 +95,7 @@ enum GroupMemberRole {
   OWNER
   ADMIN
   MEMBER
+  VIEWER
 }
 
 // ─── VAULT ─────────────────────────────────────────────────────────────────────
@@ -130,16 +140,18 @@ model Ticket {
   createdById  String
   assignedToId String?
   groupId      String?
+  templateId   String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  createdBy  User   @relation("CreatedTickets", fields: [createdById], references: [id])
-  assignedTo User?  @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  group      Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy  User            @relation("CreatedTickets", fields: [createdById], references: [id])
+  assignedTo User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  group      Group?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
-  history  TicketHistory[]
-  labels   TicketLabel[]
-  comments TicketComment[]
+  history     TicketHistory[]
+  labels      TicketLabel[]
+  comments    TicketComment[]
+  attachments Attachment[]
 
   @@index([createdById])
   @@index([assignedToId])
@@ -231,8 +243,9 @@ model Note {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group       Group?       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
 
   @@index([userId])
   @@index([groupId])
@@ -262,4 +275,75 @@ enum ReminderStatus {
   NOTIFIED
   DISMISSED
   DONE
+}
+
+// ─── ATTACHMENTS ───────────────────────────────────────────────────────────────
+
+model Attachment {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  ticketId     String?
+  noteId       String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+  ticket     Ticket? @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  note       Note?   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([noteId])
+  @@map("attachments")
+}
+
+// ─── TICKET TEMPLATES ──────────────────────────────────────────────────────────
+
+model TicketTemplate {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  title       String
+  body        String?        @db.Text
+  priority    TicketPriority @default(NORMAL)
+  scope       TicketScope    @default(INDIVIDUAL)
+  groupId     String?
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  createdBy User   @relation(fields: [createdById], references: [id])
+  group     Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([groupId])
+  @@map("ticket_templates")
+}
+
+// ─── RECURRING TICKETS ─────────────────────────────────────────────────────────
+
+model RecurringTicket {
+  id           String         @id @default(cuid())
+  title        String
+  description  String?        @db.Text
+  priority     TicketPriority @default(NORMAL)
+  scope        TicketScope    @default(INDIVIDUAL)
+  groupId      String?
+  assignedToId String?
+  cronExpr     String
+  createdById  String
+  isActive     Boolean        @default(true)
+  lastRun      DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  createdBy  User   @relation("RecurringCreated", fields: [createdById], references: [id])
+  group      Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assignedTo User?  @relation("RecurringAssigned", fields: [assignedToId], references: [id])
+
+  @@index([createdById])
+  @@index([groupId])
+  @@map("recurring_tickets")
 }

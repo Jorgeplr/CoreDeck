@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware";
 import { prisma } from "@/lib/prisma";
-import { inviteMemberSchema } from "@/lib/validation";
+import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation";
 
 type Params = { groupId: string };
 
@@ -54,6 +54,35 @@ export const POST = withAuth<Promise<Params>>(async (req: NextRequest, { params,
     include: { user: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
   });
   return NextResponse.json(newMember, { status: 201 });
+});
+
+export const PATCH = withAuth<Promise<Params>>(async (req: NextRequest, { params, user }) => {
+  const { groupId } = await params;
+
+  const myMembership = await prisma.groupMember.findUnique({
+    where: { userId_groupId: { userId: user.sub, groupId } },
+  });
+  if (!myMembership || (myMembership.role !== "OWNER" && myMembership.role !== "ADMIN")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await req.json();
+  const { userId: targetUserId, ...rest } = body;
+  const parsed = updateMemberRoleSchema.safeParse(rest);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  const target = await prisma.groupMember.findUnique({
+    where: { userId_groupId: { userId: targetUserId, groupId } },
+  });
+  if (!target) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+  if (target.role === "OWNER") return NextResponse.json({ error: "Cannot change owner role" }, { status: 403 });
+
+  const updated = await prisma.groupMember.update({
+    where: { userId_groupId: { userId: targetUserId, groupId } },
+    data: { role: parsed.data.role },
+    include: { user: { select: { id: true, username: true, displayName: true } } },
+  });
+  return NextResponse.json(updated);
 });
 
 export const DELETE = withAuth<Promise<Params>>(async (req: NextRequest, { params, user }) => {

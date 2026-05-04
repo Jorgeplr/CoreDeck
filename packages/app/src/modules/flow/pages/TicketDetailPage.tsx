@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Trash2, Users, UserCheck, UserX, Send } from "lucide-react";
+import AttachmentsPanel from "@/components/attachments/AttachmentsPanel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -393,9 +394,14 @@ export default function TicketDetailPage() {
 
         {/* Details tab */}
         {tab === "details" && (
-          <div className="p-4 text-sm text-gray-500 dark:text-slate-400 space-y-1">
-            <p>Creado {format(new Date(ticket.createdAt), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}</p>
-            <p>Última actualización {format(new Date(ticket.updatedAt), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}</p>
+          <div className="p-4 space-y-5">
+            <div className="text-sm text-gray-500 dark:text-slate-400 space-y-1">
+              <p>Creado {format(new Date(ticket.createdAt), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}</p>
+              <p>Última actualización {format(new Date(ticket.updatedAt), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es })}</p>
+            </div>
+            <div className="border-t border-gray-100 dark:border-slate-700 pt-4">
+              <AttachmentsPanel ticketId={ticket.id} />
+            </div>
           </div>
         )}
       </div>
