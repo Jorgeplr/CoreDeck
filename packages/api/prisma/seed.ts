@@ -60,17 +60,31 @@ async function main() {
   const users: Record<string, { id: string; email: string; username: string }> = {};
   for (const u of userDefs) {
     const passwordHash = await bcrypt.hash(u.password, 12);
-    const user = await prisma.user.upsert({
-      where: { email: u.email },
-      update: { emailVerified: true, emailVerifyToken: null, emailVerifyExpires: null },
-      create: {
-        email: u.email,
-        username: u.username,
-        passwordHash,
-        displayName: u.displayName,
-        emailVerified: true,
-      },
+    const existingUser = await prisma.user.findFirst({
+      where: { OR: [{ email: u.email }, { username: u.username }] },
     });
+    const user = existingUser
+      ? await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            email: u.email,
+            username: u.username,
+            passwordHash,
+            displayName: u.displayName,
+            emailVerified: true,
+            emailVerifyToken: null,
+            emailVerifyExpires: null,
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            email: u.email,
+            username: u.username,
+            passwordHash,
+            displayName: u.displayName,
+            emailVerified: true,
+          },
+        });
     users[u.username] = user;
   }
   console.log(`  ✓ ${userDefs.length} usuarios (todos verificados)`);

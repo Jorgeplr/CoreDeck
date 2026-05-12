@@ -20,7 +20,7 @@ services:
     image: mysql:8.0
     container_name: coredesk_mysql_shadow
     ports:
-      - "3307:3306"
+      - "3309:3306"
     environment:
       MYSQL_ROOT_PASSWORD: coredesk_root
       MYSQL_DATABASE: coredesk_shadow

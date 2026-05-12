@@ -32,10 +32,13 @@ header "2/6  Environment files"
 
 if [ ! -f packages/api/.env ]; then
   cp packages/api/.env.example packages/api/.env
-  # Fix the DB port to match docker-compose (3308 not 3306)
+  # Fix the DB ports to match docker-compose (3308 + 3309)
   if command -v sed >/dev/null 2>&1; then
     sed -i.bak \
       's|localhost:3306/coredesk"|localhost:3308/coredesk"|g' \
+      packages/api/.env
+    sed -i.bak \
+      's|localhost:3307/coredesk_shadow"|localhost:3309/coredesk_shadow"|g' \
       packages/api/.env && rm -f packages/api/.env.bak
   fi
   warn "Created packages/api/.env from example — edit SMTP_PASS if you want emails"
@@ -55,7 +58,7 @@ fi
 header "3/6  Starting Docker containers"
 
 docker compose up -d
-success "Containers started (mysql :3308, mysql_shadow :3307)"
+success "Containers started (mysql :3308, mysql_shadow :3309)"
 
 # ─── 4. Wait for MySQL ─────────────────────────────────────────────────────────
 header "4/6  Waiting for MySQL to be ready"
