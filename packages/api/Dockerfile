@@ -20,12 +20,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/effect ./node_modules/effect
+COPY --from=builder /app/node_modules ./node_modules
 
-# Create uploads directory for local file attachments
 RUN mkdir -p /app/uploads
 
 EXPOSE 3001
@@ -33,5 +29,4 @@ ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 ENV UPLOAD_DIR=/app/uploads
 
-# Run migrations then start the server
 CMD node node_modules/prisma/build/index.js migrate deploy && node server.js
