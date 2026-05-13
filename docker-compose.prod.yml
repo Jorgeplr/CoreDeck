@@ -27,7 +27,6 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: mysql://coredesk_user:${MYSQL_PASSWORD}@mysql:3306/coredesk
-      # SHADOW_DATABASE_URL not needed in production (migrate deploy doesn't use it)
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 15m
       REFRESH_TOKEN_EXPIRES_DAYS: 7
@@ -45,6 +44,13 @@ services:
       REMINDER_NOTIFY_HOURS_BEFORE: 24
     expose:
       - "3001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.coredesk-api.rule=Host(`coredesk-api.jorgelp.cloud`)"
+      - "traefik.http.routers.coredesk-api.entrypoints=websecure"
+      - "traefik.http.routers.coredesk-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.coredesk-api.loadbalancer.server.port=3001"
     networks:
       - coredesk
       - dokploy-network
@@ -58,6 +64,13 @@ services:
     restart: always
     expose:
       - "80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.coredesk-app.rule=Host(`coredesk.jorgelp.cloud`)"
+      - "traefik.http.routers.coredesk-app.entrypoints=websecure"
+      - "traefik.http.routers.coredesk-app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.coredesk-app.loadbalancer.server.port=80"
     networks:
       - coredesk
       - dokploy-network
