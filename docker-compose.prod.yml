@@ -47,6 +47,7 @@ services:
       - "3001"
     networks:
       - coredesk
+      - dokploy-network
 
   app:
     build:
@@ -59,10 +60,13 @@ services:
       - "80"
     networks:
       - coredesk
+      - dokploy-network
 
 networks:
   coredesk:
     driver: bridge
+  dokploy-network:
+    external: true
 
 volumes:
   mysql_data:
