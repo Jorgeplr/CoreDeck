@@ -137,6 +137,7 @@ model Ticket {
   priority     TicketPriority @default(NORMAL)
   scope        TicketScope    @default(INDIVIDUAL)
   dueDate      DateTime?
+  dueNotifiedAt DateTime?
   createdById  String
   assignedToId String?
   groupId      String?
@@ -336,6 +337,7 @@ model RecurringTicket {
   createdById  String
   isActive     Boolean        @default(true)
   lastRun      DateTime?
+  nextRunAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -346,4 +348,15 @@ model RecurringTicket {
   @@index([createdById])
   @@index([groupId])
   @@map("recurring_tickets")
+}
+
+// ─── CRON LOCKS ───────────────────────────────────────────────────────────────
+
+model CronLock {
+  name        String   @id
+  lockedUntil DateTime?
+  lockedBy    String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("cron_locks")
 }

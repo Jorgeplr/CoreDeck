@@ -34,6 +34,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN}
+      APP_URL: ${APP_URL}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
@@ -42,8 +43,47 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-"CoreDesk <noreply@coredesk.app>"}
       REMINDER_CHECK_CRON: "*/15 * * * *"
       REMINDER_NOTIFY_HOURS_BEFORE: 24
+      CRON_LOCK_TTL_MS: ${CRON_LOCK_TTL_MS:-300000}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+      RATE_LIMIT_PREFIX: ${RATE_LIMIT_PREFIX:-rate}
     expose:
       - "3001"
+    networks:
+      - coredesk
+      - dokploy-network
+
+  cron:
+    build:
+      context: ./packages/api
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://coredesk_user:${MYSQL_PASSWORD}@mysql:3306/coredesk
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_DAYS: 7
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      NODE_ENV: production
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      APP_URL: ${APP_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      EMAIL_FROM: ${EMAIL_FROM:-"CoreDesk <noreply@coredesk.app>"}
+      REMINDER_CHECK_CRON: "*/15 * * * *"
+      REMINDER_NOTIFY_HOURS_BEFORE: 24
+      CRON_LOCK_TTL_MS: ${CRON_LOCK_TTL_MS:-300000}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+      RATE_LIMIT_PREFIX: ${RATE_LIMIT_PREFIX:-rate}
+    command: bunx tsx src/cronWorker.ts
     networks:
       - coredesk
       - dokploy-network

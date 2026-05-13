@@ -15,11 +15,11 @@ Prisma lee estas variables desde `.env`:
 
 ```env
 DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3308/coredesk"
-SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3307/coredesk_shadow"
+SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3309/coredesk_shadow"
 ```
 
 Notas:
-- El proyecto usa Docker Compose con MySQL en el puerto **3308** (host) y el shadow DB en **3307**.
+- El proyecto usa Docker Compose con MySQL en el puerto **3308** (host) y el shadow DB en **3309**.
 - Si el contenedor esta arriba y el login falla, revisa que el puerto de `DATABASE_URL` coincida con el mapeo del compose.
 
 ## Modelos y tablas
@@ -100,4 +100,4 @@ bunx tsx prisma/seed.ts
 
 - **No conecta a MySQL**: `docker compose ps` y valida que el puerto en `.env` sea `3308`.
 - **Auth failed**: revisa `coredesk_user` / `coredesk_pass` en docker-compose y tu `DATABASE_URL`.
-- **Shadow DB**: `SHADOW_DATABASE_URL` debe apuntar al puerto `3307`.
+- **Shadow DB**: `SHADOW_DATABASE_URL` debe apuntar al puerto `3309`.

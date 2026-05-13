@@ -80,11 +80,19 @@ export const PATCH = withAuth<Promise<Params>>(async (req: NextRequest, { params
     historyEntries.push({ action: "ASSIGNED", oldValue: existing.assignedToId ?? undefined, newValue: ticketData.assignedToId ?? undefined });
   }
 
+  const updateData: Record<string, unknown> = {
+    ...ticketData,
+    dueDate: ticketData.dueDate ? new Date(ticketData.dueDate) : undefined,
+  };
+
+  if (ticketData.dueDate !== undefined || (ticketData.status && ticketData.status !== "RESOLVED")) {
+    updateData.dueNotifiedAt = null;
+  }
+
   const updated = await prisma.ticket.update({
     where: { id: ticketId },
     data: {
-      ...ticketData,
-      dueDate: ticketData.dueDate ? new Date(ticketData.dueDate) : undefined,
+      ...updateData,
       labels: labelIds
         ? {
             deleteMany: {},

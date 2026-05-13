@@ -51,7 +51,7 @@ Plataforma de productividad all-in-one con gestión de contraseñas cifradas (E2
 
 ```
 CoreDesk/
-├── docker-compose.yml          # MySQL 8 (puerto 3306) + shadow DB (puerto 3307)
+├── docker-compose.yml          # MySQL 8 (puerto 3308) + shadow DB (puerto 3309)
 ├── .gitignore
 │
 ├── packages/
@@ -241,8 +241,8 @@ docker compose up -d
 ```
 
 Esto levanta:
-- **MySQL 8** en `localhost:3306` — base de datos `coredesk`
-- **MySQL Shadow** en `localhost:3307` — requerido por Prisma para migraciones
+- **MySQL 8** en `localhost:3308` — base de datos `coredesk`
+- **MySQL Shadow** en `localhost:3309` — requerido por Prisma para migraciones
 
 Verificar que los contenedores estén corriendo:
 ```bash
@@ -267,8 +267,8 @@ Editar `.env` con tus valores:
 
 ```env
 # Base de datos (ya configurada para Docker local)
-DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3306/coredesk"
-SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3307/coredesk_shadow"
+DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3308/coredesk"
+SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3309/coredesk_shadow"
 
 # Auth — generar valores seguros
 JWT_SECRET="genera_un_string_aleatorio_de_64_chars"
@@ -284,6 +284,7 @@ EMAIL_FROM="CoreDesk <noreply@coredesk.app>"
 
 # CORS
 CORS_ORIGIN="http://localhost:5173"
+APP_URL="http://localhost:5173"
 ```
 
 ```bash
@@ -348,6 +349,7 @@ El frontend queda disponible en **http://localhost:5173**
 | `bunx prisma studio` | Interfaz visual de la base de datos |
 | `bun run dev` (api) | Backend en modo desarrollo |
 | `bun run dev` (app) | Frontend en modo desarrollo |
+| `bun run cron:worker` | Worker de cron para recordatorios y vencimientos |
 | `bun run build` | Build de producción |
 
 ---
@@ -459,8 +461,8 @@ DELETE /api/context/reminders/:id
 
 ### `packages/api/.env`
 ```env
-DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3306/coredesk"
-SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3307/coredesk_shadow"
+DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3308/coredesk"
+SHADOW_DATABASE_URL="mysql://coredesk_user:coredesk_pass@localhost:3309/coredesk_shadow"
 
 JWT_SECRET=""
 JWT_EXPIRES_IN="15m"
@@ -470,6 +472,7 @@ COOKIE_SECRET=""
 NODE_ENV="development"
 API_PORT=3001
 CORS_ORIGIN="http://localhost:5173"
+APP_URL="http://localhost:5173"
 
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
@@ -480,6 +483,11 @@ EMAIL_FROM="CoreDesk <noreply@coredesk.app>"
 
 REMINDER_CHECK_CRON="*/15 * * * *"
 REMINDER_NOTIFY_HOURS_BEFORE=24
+CRON_LOCK_TTL_MS=300000
+
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
+RATE_LIMIT_PREFIX="rate"
 ```
 
 ### `packages/app/.env`

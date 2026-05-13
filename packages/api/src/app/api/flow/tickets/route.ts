@@ -10,6 +10,10 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
   const groupId = searchParams.get("groupId");
   const scope = searchParams.get("scope");
   const assignedToId = searchParams.get("assignedToId");
+  const limit = Number(searchParams.get("limit") ?? "0");
+  const offset = Number(searchParams.get("offset") ?? "0");
+  const take = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 200) : undefined;
+  const skip = Number.isFinite(offset) && offset > 0 ? offset : undefined;
 
   const where: Record<string, unknown> = {};
 
@@ -32,6 +36,8 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
       labels: { include: { label: true } },
       _count: { select: { history: true } },
     },
+    take,
+    skip,
     orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
   });
 

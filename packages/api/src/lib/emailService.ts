@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 
-const APP_URL = process.env.CORS_ORIGIN ?? "http://localhost:5173";
+const APP_URL =
+  process.env.APP_URL ?? process.env.CORS_ORIGIN ?? "http://localhost:5173";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,

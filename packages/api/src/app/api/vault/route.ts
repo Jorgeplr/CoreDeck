@@ -7,6 +7,10 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope");
   const groupId = searchParams.get("groupId");
+  const limit = Number(searchParams.get("limit") ?? "0");
+  const offset = Number(searchParams.get("offset") ?? "0");
+  const take = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 200) : undefined;
+  const skip = Number.isFinite(offset) && offset > 0 ? offset : undefined;
 
   const where =
     scope === "GROUP" && groupId
@@ -28,6 +32,8 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
       createdAt: true,
       updatedAt: true,
     },
+    take,
+    skip,
     orderBy: { title: "asc" },
   });
 

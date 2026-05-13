@@ -1,56 +1,81 @@
 import cron from "node-cron";
+import { parseExpression } from "cron-parser";
 import { prisma } from "./prisma";
 import { sendReminderEmail, sendTicketDueEmail } from "./emailService";
 
-function matchesCron(cronExpr: string, now: Date): boolean {
+const INSTANCE_ID = process.env.INSTANCE_ID ?? process.env.HOSTNAME ?? "local";
+const LOCK_TTL_MS_RAW = Number(process.env.CRON_LOCK_TTL_MS ?? "");
+const LOCK_TTL_MS = Number.isFinite(LOCK_TTL_MS_RAW) && LOCK_TTL_MS_RAW > 0
+  ? LOCK_TTL_MS_RAW
+  : 5 * 60 * 1000;
+
+async function tryAcquireCronLock(name: string, ttlMs: number): Promise<boolean> {
+  const now = new Date();
+  const lockedUntil = new Date(now.getTime() + ttlMs);
+
   try {
-    return cron.validate(cronExpr) && cron.getTasks !== undefined
-      ? false // use node-cron's internal schedule check indirectly
-      : false;
+    const updated = await prisma.cronLock.updateMany({
+      where: { name, OR: [{ lockedUntil: null }, { lockedUntil: { lt: now } }] },
+      data: { lockedUntil, lockedBy: INSTANCE_ID },
+    });
+
+    if (updated.count > 0) return true;
+
+    await prisma.cronLock.create({
+      data: { name, lockedUntil, lockedBy: INSTANCE_ID },
+    });
+
+    return true;
   } catch {
     return false;
   }
 }
 
+function getNextRunAt(cronExpr: string, fromDate: Date): Date {
+  const interval = parseExpression(cronExpr, { currentDate: fromDate });
+  return interval.next().toDate();
+}
+
 async function processRecurringTickets(now: Date): Promise<void> {
   const actives = await prisma.recurringTicket.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }],
+    },
   });
 
   for (const rt of actives) {
     try {
-      // Simple hourly check: compare last run. A proper implementation would
-      // use a cron expression parser library. Here we fire if lastRun is null
-      // or more than 23h ago AND the cronExpr minute/hour matches now.
-      const parts = rt.cronExpr.trim().split(/\s+/);
-      if (parts.length !== 5) continue;
-      const [minute, hour, , ,] = parts;
-
-      const matchMinute = minute === "*" || Number(minute) === now.getMinutes();
-      const matchHour = hour === "*" || Number(hour) === now.getHours();
-      const notRunToday =
-        !rt.lastRun ||
-        now.getTime() - rt.lastRun.getTime() > 23 * 60 * 60 * 1000;
-
-      if (matchMinute && matchHour && notRunToday) {
-        await prisma.ticket.create({
-          data: {
-            title: rt.title,
-            description: rt.description ?? undefined,
-            priority: rt.priority,
-            scope: rt.scope,
-            groupId: rt.groupId ?? undefined,
-            assignedToId: rt.assignedToId ?? undefined,
-            createdById: rt.createdById,
-          },
-        });
+      if (!rt.nextRunAt) {
+        const nextRunAt = getNextRunAt(rt.cronExpr, now);
         await prisma.recurringTicket.update({
           where: { id: rt.id },
-          data: { lastRun: now },
+          data: { nextRunAt },
         });
+        continue;
       }
+
+      if (rt.nextRunAt > now) continue;
+
+      await prisma.ticket.create({
+        data: {
+          title: rt.title,
+          description: rt.description ?? undefined,
+          priority: rt.priority,
+          scope: rt.scope,
+          groupId: rt.groupId ?? undefined,
+          assignedToId: rt.assignedToId ?? undefined,
+          createdById: rt.createdById,
+        },
+      });
+
+      const nextRunAt = getNextRunAt(rt.cronExpr, now);
+      await prisma.recurringTicket.update({
+        where: { id: rt.id },
+        data: { lastRun: now, nextRunAt },
+      });
     } catch (err) {
-      console.error(`[recurring] Failed to create ticket for ${rt.id}:`, err);
+      console.error(`[recurring] Failed to process ${rt.id}:`, err);
     }
   }
 }
@@ -66,6 +91,10 @@ export function initCronJobs(): void {
 
   cron.schedule(schedule, async () => {
     const now = new Date();
+
+    const lockAcquired = await tryAcquireCronLock("coredesk-cron", LOCK_TTL_MS);
+    if (!lockAcquired) return;
+
     await processRecurringTickets(now).catch((err) =>
       console.error("[recurring cron] error:", err)
     );
@@ -105,6 +134,7 @@ export function initCronJobs(): void {
         where: {
           dueDate: { lte: notifyBefore, not: null },
           status: { not: "RESOLVED" },
+          dueNotifiedAt: null,
         },
         include: {
           createdBy: { select: { email: true } },
@@ -125,6 +155,11 @@ export function initCronJobs(): void {
             console.error(`Failed to notify ticket ${ticket.id} to ${email}:`, err);
           }
         }
+
+        await prisma.ticket.update({
+          where: { id: ticket.id },
+          data: { dueNotifiedAt: new Date() },
+        });
       }
     } catch (err) {
       console.error("Ticket due cron error:", err);

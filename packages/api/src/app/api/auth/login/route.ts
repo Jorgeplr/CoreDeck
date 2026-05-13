@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ??
       "unknown";
 
-    if (!checkRateLimit(`login:${ip}`, 10, 60_000)) {
+    if (!(await checkRateLimit(`login:${ip}`, 10, 60_000))) {
       return NextResponse.json(
         { error: "Demasiados intentos, inténtalo en un minuto" },
         { status: 429 }

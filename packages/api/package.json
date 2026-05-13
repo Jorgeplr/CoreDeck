@@ -6,6 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3001",
+    "cron:worker": "tsx src/cronWorker.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
@@ -14,8 +15,10 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@upstash/redis": "^1.31.3",
     "bcryptjs": "^2.4.3",
     "cookie": "^1.0.2",
+    "cron-parser": "^4.9.0",
     "jsonwebtoken": "^9.0.2",
     "next": "^15.1.0",
     "node-cron": "^3.0.3",
