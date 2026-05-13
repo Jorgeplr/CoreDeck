@@ -44,13 +44,6 @@ services:
       REMINDER_NOTIFY_HOURS_BEFORE: 24
     expose:
       - "3001"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.coredesk-api.rule=Host(`coredesk-api.jorgelp.cloud`)"
-      - "traefik.http.routers.coredesk-api.entrypoints=websecure"
-      - "traefik.http.routers.coredesk-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.coredesk-api.loadbalancer.server.port=3001"
     networks:
       - coredesk
       - dokploy-network
@@ -64,13 +57,6 @@ services:
     restart: always
     expose:
       - "80"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.coredesk-app.rule=Host(`coredesk.jorgelp.cloud`)"
-      - "traefik.http.routers.coredesk-app.entrypoints=websecure"
-      - "traefik.http.routers.coredesk-app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.coredesk-app.loadbalancer.server.port=80"
     networks:
       - coredesk
       - dokploy-network
