@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken, type JwtPayload } from "./auth";
 
-type RouteHandler<T = unknown> = (
+type RouteHandler<T = Promise<Record<string, string>>> = (
   req: NextRequest,
   context: { params: T; user: JwtPayload }
 ) => Promise<NextResponse> | NextResponse;
 
-export function withAuth<T = unknown>(handler: RouteHandler<T>) {
+export function withAuth<T = Promise<Record<string, string>>>(handler: RouteHandler<T>) {
   return async (req: NextRequest, context: { params: T }) => {
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
