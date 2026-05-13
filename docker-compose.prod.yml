@@ -83,7 +83,7 @@ services:
       UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
       UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
       RATE_LIMIT_PREFIX: ${RATE_LIMIT_PREFIX:-rate}
-    command: bunx tsx src/cronWorker.ts
+    command: bun src/cronWorker.ts
     networks:
       - coredesk
       - dokploy-network
