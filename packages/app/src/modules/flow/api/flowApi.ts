@@ -8,7 +8,7 @@ export interface CreateTicketPayload {
   priority?: TicketPriority;
   scope?: "INDIVIDUAL" | "GROUP";
   dueDate?: string;
-  assignedToId?: string;
+  assignedToId?: string | null;
   groupId?: string;
   labelIds?: string[];
 }

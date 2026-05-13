@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Search, Lock, KeyRound, User, Users } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useVaultStore } from "@/store/vaultStore";
-import { useAuthStore } from "@/store/authStore";
 import { vaultApi } from "../api/vaultApi";
 import { groupsApi } from "@/modules/groups/api/groupsApi";
 import PasswordCard from "../components/PasswordCard";
@@ -17,7 +16,6 @@ export default function VaultPage() {
   const isUnlocked = useVaultStore((s) => s.isUnlocked);
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const user = useAuthStore((s) => s.user);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState<VaultTab>("personal");

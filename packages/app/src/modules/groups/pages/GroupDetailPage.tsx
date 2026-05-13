@@ -11,12 +11,14 @@ const ROLE_LABELS: Record<GroupRole, string> = {
   OWNER: "Propietario",
   ADMIN: "Admin",
   MEMBER: "Miembro",
+  VIEWER: "Visor",
 };
 
 const ROLE_ICONS: Record<GroupRole, React.ReactNode> = {
   OWNER: <Crown size={12} className="text-yellow-500" />,
   ADMIN: <Shield size={12} className="text-blue-500" />,
   MEMBER: <User size={12} className="text-gray-400" />,
+  VIEWER: <User size={12} className="text-gray-300" />,
 };
 
 function CopyButton({ text }: { text: string }) {
