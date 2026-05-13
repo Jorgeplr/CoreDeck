@@ -43,8 +43,8 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-"CoreDesk <noreply@coredesk.app>"}
       REMINDER_CHECK_CRON: "*/15 * * * *"
       REMINDER_NOTIFY_HOURS_BEFORE: 24
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     networks:
       - coredesk
 
@@ -55,8 +55,8 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
     restart: always
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     networks:
       - coredesk
 
