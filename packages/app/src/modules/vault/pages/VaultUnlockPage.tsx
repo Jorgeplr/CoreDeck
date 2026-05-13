@@ -32,28 +32,28 @@ export default function VaultUnlockPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-5">
-            <KeyRound size={30} className="text-amber-500 dark:text-amber-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--app-panel-2)] ring-1 ring-[var(--app-border)] mb-5">
+            <KeyRound size={30} className="text-[var(--app-accent-2)]" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Desbloquear Vault</h2>
-          <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+          <h2 className="text-2xl font-display text-[var(--app-text)] mb-2">Desbloquear Vault</h2>
+          <p className="text-sm text-[var(--app-muted)] leading-relaxed">
             Tu contraseña maestra cifra todos tus datos.<br />
-            <span className="text-amber-600 dark:text-amber-400 font-medium">Nunca sale de este dispositivo.</span>
+            <span className="text-[var(--app-accent)] font-medium">Nunca sale de este dispositivo.</span>
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 space-y-4">
+        <div className="bg-[var(--app-panel)] rounded-3xl shadow-[var(--app-shadow)] ring-1 ring-[var(--app-border)] p-6 space-y-4">
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-4 py-3 rounded-xl border border-red-100 dark:border-red-900">
+            <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-100">
               {error}
             </div>
           )}
 
           <form onSubmit={handleUnlock} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-[var(--app-text)] mb-1.5">
                 Contraseña maestra
               </label>
               <div className="relative">
@@ -63,13 +63,13 @@ export default function VaultUnlockPage() {
                   autoFocus
                   value={masterPassword}
                   onChange={(e) => setMasterPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 pr-11 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 pr-11 rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel-2)] text-[var(--app-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--app-ring)] focus:border-transparent"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                  className="absolute inset-y-0 right-3 flex items-center text-[var(--app-muted)] hover:text-[var(--app-text)] transition-colors"
                 >
                   {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -79,7 +79,7 @@ export default function VaultUnlockPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm shadow-sm"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] disabled:opacity-60 text-white font-semibold py-2.5 rounded-2xl transition-transform hover:scale-[1.01] text-sm"
             >
               <ShieldCheck size={16} />
               {loading ? "Derivando clave..." : "Desbloquear"}
@@ -87,7 +87,7 @@ export default function VaultUnlockPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 dark:text-slate-500 mt-4">
+        <p className="text-center text-xs text-[var(--app-muted)] mt-4">
           Cifrado E2EE con AES-256-GCM • PBKDF2 310,000 iteraciones
         </p>
       </div>

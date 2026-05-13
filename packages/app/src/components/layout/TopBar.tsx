@@ -24,34 +24,34 @@ export default function TopBar() {
 
   return (
     <>
-      <header className="h-14 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 shrink-0">
+      <header className="h-16 bg-[var(--app-panel)]/85 border-b border-[var(--app-border)] backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.6)]">
         {/* Search trigger */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700 text-sm text-gray-400 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-600 transition-colors"
+          className="flex items-center gap-3 px-4 py-2 rounded-full border border-[var(--app-border)] bg-[var(--app-panel-2)] text-sm text-[var(--app-muted)] hover:text-[var(--app-text)] hover:shadow-sm transition-all"
         >
           <Search size={14} />
           <span>Buscar...</span>
-          <kbd className="ml-2 text-xs bg-gray-100 dark:bg-slate-600 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
+          <kbd className="ml-2 text-xs bg-white/70 dark:bg-white/10 px-2 py-0.5 rounded-full font-mono text-[var(--app-muted)]">⌘K</kbd>
         </button>
 
         <div className="flex items-center gap-4">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-full text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] transition-colors"
             aria-label="Toggle theme"
           >
             {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <button
             onClick={() => navigate("/profile")}
-            className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 px-2 py-1.5 rounded-xl transition-colors"
+            className="flex items-center gap-3 text-sm text-[var(--app-text)] hover:bg-[var(--app-panel-2)] px-2.5 py-1.5 rounded-full transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-full bg-[var(--app-panel-2)] ring-1 ring-[var(--app-border)] flex items-center justify-center overflow-hidden">
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
               ) : (
-                <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                <span className="text-sm font-bold text-[var(--app-accent)]">
                   {(user?.displayName ?? user?.username ?? "?")[0].toUpperCase()}
                 </span>
               )}

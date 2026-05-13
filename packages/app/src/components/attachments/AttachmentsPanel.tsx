@@ -71,14 +71,14 @@ export default function AttachmentsPanel({ ticketId, noteId }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
+        <h3 className="text-sm font-medium text-[var(--app-text)] flex items-center gap-2">
           <Paperclip size={14} />
           Adjuntos {attachments.length > 0 && `(${attachments.length})`}
         </h3>
         <button
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[var(--app-panel-2)] text-[var(--app-accent)] hover:text-[var(--app-text)] transition-colors disabled:opacity-50"
         >
           <Upload size={13} />
           {uploading ? "Subiendo..." : "Subir"}
@@ -87,7 +87,7 @@ export default function AttachmentsPanel({ ticketId, noteId }: Props) {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+        <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
           <X size={12} />
           {error}
         </div>
@@ -98,9 +98,9 @@ export default function AttachmentsPanel({ ticketId, noteId }: Props) {
           {attachments.map((att) => (
             <li
               key={att.id}
-              className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-700"
+              className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--app-panel-2)] border border-[var(--app-border)]"
             >
-              <div className="shrink-0 text-gray-400 dark:text-slate-500">
+              <div className="shrink-0 text-[var(--app-muted)]">
                 {isImage(att.mimeType) ? <Image size={16} /> : <FileText size={16} />}
               </div>
               <div className="min-w-0 flex-1">
@@ -108,16 +108,16 @@ export default function AttachmentsPanel({ ticketId, noteId }: Props) {
                   href={`${BASE_URL}/attachments/${att.id}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium text-gray-800 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400 truncate block"
+                  className="text-sm font-medium text-[var(--app-text)] hover:text-[var(--app-accent)] truncate block"
                 >
                   {att.originalName}
                 </a>
-                <p className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(att.size)}</p>
+                <p className="text-xs text-[var(--app-muted)]">{formatBytes(att.size)}</p>
               </div>
               <button
                 onClick={() => deleteMutation.mutate(att.id)}
                 disabled={deleteMutation.isPending}
-                className="shrink-0 p-1 rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                className="shrink-0 p-1 rounded-lg text-[var(--app-muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
               >
                 <Trash2 size={14} />
               </button>

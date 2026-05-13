@@ -45,13 +45,13 @@ export default function SearchModal({ onClose }: Props) {
     ...(results?.tickets.map((t) => ({
       label: t.title,
       sub: `Ticket · ${t.status}`,
-      icon: <Ticket size={14} className="text-purple-500" />,
+      icon: <Ticket size={14} className="text-teal-500" />,
       path: `/flow/tickets/${t.id}`,
     })) ?? []),
     ...(results?.notes.map((n) => ({
       label: n.title,
       sub: n.isCollaborative ? "Nota colaborativa" : "Nota personal",
-      icon: <FileText size={14} className="text-blue-500" />,
+      icon: <FileText size={14} className="text-sky-500" />,
       path: `/context/notes/${n.id}`,
     })) ?? []),
     ...(results?.vault.map((v) => ({
@@ -80,11 +80,11 @@ export default function SearchModal({ onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden"
+        className="w-full max-w-lg bg-[var(--app-panel)] rounded-3xl shadow-[var(--app-shadow)] ring-1 ring-[var(--app-border)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--app-border)]">
           {loading ? (
             <Loader2 size={16} className="text-gray-400 animate-spin shrink-0" />
           ) : (
@@ -96,9 +96,9 @@ export default function SearchModal({ onClose }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Buscar tickets, notas, vault..."
-            className="flex-1 text-sm text-gray-900 dark:text-white bg-transparent outline-none placeholder-gray-400 dark:placeholder-slate-500"
+            className="flex-1 text-sm text-[var(--app-text)] bg-transparent outline-none placeholder-[var(--app-muted)]"
           />
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+          <button onClick={onClose} className="text-gray-400 hover:text-[var(--app-text)]">
             <X size={16} />
           </button>
         </div>
@@ -114,15 +114,15 @@ export default function SearchModal({ onClose }: Props) {
                   className={clsx(
                     "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
                     i === selected
-                      ? "bg-primary-50 dark:bg-primary-900/20"
-                      : "hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                      ? "bg-[var(--app-panel-2)]"
+                      : "hover:bg-[var(--app-panel-2)]/70"
                   )}
                 >
                   <span className="shrink-0">{item.icon}</span>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.label}</p>
+                    <p className="text-sm font-medium text-[var(--app-text)] truncate">{item.label}</p>
                     {item.sub && (
-                      <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{item.sub}</p>
+                      <p className="text-xs text-[var(--app-muted)] truncate">{item.sub}</p>
                     )}
                   </div>
                 </button>
@@ -137,7 +137,7 @@ export default function SearchModal({ onClose }: Props) {
           </p>
         )}
 
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
+        <div className="px-4 py-2 border-t border-[var(--app-border)] flex items-center gap-3 text-xs text-gray-400 dark:text-slate-500">
           <span>↑↓ navegar</span>
           <span>↵ abrir</span>
           <span>Esc cerrar</span>

@@ -10,12 +10,12 @@ type Modal = "create" | "join" | null;
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-[var(--app-panel)] rounded-2xl shadow-[var(--app-shadow)] ring-1 ring-[var(--app-border)] w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+          <h3 className="text-base font-semibold text-[var(--app-text)] font-display">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-600 dark:hover:text-white transition-colors"
+            className="p-1.5 rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] transition-colors"
           >
             <X size={16} />
           </button>
@@ -58,23 +58,23 @@ function CreateGroupModal({ onClose }: { onClose: () => void }) {
     },
   });
 
-  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500";
+  const inputCls = "w-full px-3 py-2.5 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-2)] text-sm text-[var(--app-text)] focus:outline-none focus:ring-2 focus:ring-[var(--app-ring)]";
 
   if (created) {
     return (
       <Modal title="¡Grupo creado!" onClose={onClose}>
-        <p className="text-sm text-gray-600 dark:text-slate-400">
+        <p className="text-sm text-[var(--app-muted)]">
           Comparte este código para que otros miembros se unan a <strong>{created.name}</strong>.
         </p>
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-700 rounded-xl px-4 py-3">
-          <span className="flex-1 text-xl font-mono font-bold tracking-widest text-gray-900 dark:text-white">
+        <div className="flex items-center gap-2 bg-[var(--app-panel-2)] rounded-xl px-4 py-3 ring-1 ring-[var(--app-border)]">
+          <span className="flex-1 text-xl font-mono font-bold tracking-widest text-[var(--app-text)]">
             {created.inviteCode}
           </span>
           <CopyButton text={created.inviteCode} />
         </div>
         <button
           onClick={onClose}
-          className="w-full py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
+          className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] text-white text-sm font-medium transition-colors"
         >
           Listo
         </button>
@@ -86,7 +86,7 @@ function CreateGroupModal({ onClose }: { onClose: () => void }) {
     <Modal title="Crear grupo" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Nombre del grupo *</label>
+          <label className="block text-xs font-medium text-[var(--app-muted)] mb-1">Nombre del grupo *</label>
           <input
             autoFocus
             type="text"
@@ -97,7 +97,7 @@ function CreateGroupModal({ onClose }: { onClose: () => void }) {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-slate-400 mb-1">Descripción</label>
+          <label className="block text-xs font-medium text-[var(--app-muted)] mb-1">Descripción</label>
           <input
             type="text"
             value={description}
@@ -113,14 +113,14 @@ function CreateGroupModal({ onClose }: { onClose: () => void }) {
       <div className="flex gap-2 pt-1">
         <button
           onClick={onClose}
-          className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          className="flex-1 py-2.5 rounded-lg border border-[var(--app-border)] text-sm font-medium text-[var(--app-text)] hover:bg-[var(--app-panel-2)] transition-colors"
         >
           Cancelar
         </button>
         <button
           onClick={() => mutation.mutate({ name: name.trim(), description: description.trim() || undefined })}
           disabled={!name.trim() || mutation.isPending}
-          className="flex-1 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+          className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] disabled:opacity-60 text-white text-sm font-medium transition-colors"
         >
           {mutation.isPending ? "Creando..." : "Crear"}
         </button>
@@ -142,17 +142,17 @@ function JoinGroupModal({ onClose }: { onClose: () => void }) {
     },
   });
 
-  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 text-center font-mono tracking-widest uppercase";
+  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-panel-2)] text-sm text-[var(--app-text)] focus:outline-none focus:ring-2 focus:ring-[var(--app-ring)] text-center font-mono tracking-widest uppercase";
 
   if (joined) {
     return (
       <Modal title="¡Te uniste!" onClose={onClose}>
-        <p className="text-sm text-gray-600 dark:text-slate-400">
+        <p className="text-sm text-[var(--app-muted)]">
           Ahora eres miembro de <strong>{joined}</strong>.
         </p>
         <button
           onClick={onClose}
-          className="w-full py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
+          className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] text-white text-sm font-medium transition-colors"
         >
           Listo
         </button>
@@ -165,7 +165,7 @@ function JoinGroupModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="Unirse a un grupo" onClose={onClose}>
       <div className="space-y-3">
-        <p className="text-sm text-gray-600 dark:text-slate-400">
+        <p className="text-sm text-[var(--app-muted)]">
           Ingresa el código de invitación que te compartieron.
         </p>
         <input
@@ -188,14 +188,14 @@ function JoinGroupModal({ onClose }: { onClose: () => void }) {
       <div className="flex gap-2 pt-1">
         <button
           onClick={onClose}
-          className="flex-1 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          className="flex-1 py-2.5 rounded-lg border border-[var(--app-border)] text-sm font-medium text-[var(--app-text)] hover:bg-[var(--app-panel-2)] transition-colors"
         >
           Cancelar
         </button>
         <button
           onClick={() => mutation.mutate(code.trim())}
           disabled={code.trim().length < 4 || mutation.isPending}
-          className="flex-1 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+          className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] disabled:opacity-60 text-white text-sm font-medium transition-colors"
         >
           {mutation.isPending ? "Uniéndose..." : "Unirse"}
         </button>
@@ -234,10 +234,10 @@ export default function GroupsSection({ sidebarOpen }: Props) {
 
   if (!sidebarOpen) {
     return (
-      <div className="px-2 py-2 border-t border-gray-200 dark:border-slate-700">
+      <div className="px-2 py-2 border-t border-[var(--app-border)]">
         <button
           onClick={() => setModal("create")}
-          className="flex items-center justify-center w-full p-2.5 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="flex items-center justify-center w-full p-2.5 rounded-lg text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] transition-colors"
           title="Grupos"
         >
           <Users size={20} />
@@ -249,12 +249,12 @@ export default function GroupsSection({ sidebarOpen }: Props) {
   }
 
   return (
-    <div className="px-2 py-2 border-t border-gray-200 dark:border-slate-700">
+    <div className="px-2 py-2 border-t border-[var(--app-border)]">
       {/* Header row */}
       <div className="flex items-center justify-between px-1 mb-1">
         <button
           onClick={() => setExpanded((p) => !p)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider hover:text-[var(--app-text)] transition-colors"
         >
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           Grupos
@@ -262,25 +262,25 @@ export default function GroupsSection({ sidebarOpen }: Props) {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((p) => !p)}
-            className="p-1 rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-600 dark:hover:text-white transition-colors"
+            className="p-1 rounded-md text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] transition-colors"
             title="Crear o unirse a un grupo"
           >
             <Plus size={14} />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-6 z-30 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg py-1 w-44">
+            <div className="absolute right-0 top-6 z-30 bg-[var(--app-panel)] border border-[var(--app-border)] rounded-xl shadow-[var(--app-shadow)] py-1 w-44">
               <button
                 onClick={() => { setModal("create"); setMenuOpen(false); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-[var(--app-text)] hover:bg-[var(--app-panel-2)] transition-colors"
               >
-                <Plus size={14} className="text-primary-500" />
+                <Plus size={14} className="text-[var(--app-accent)]" />
                 Crear grupo
               </button>
               <button
                 onClick={() => { setModal("join"); setMenuOpen(false); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-[var(--app-text)] hover:bg-[var(--app-panel-2)] transition-colors"
               >
-                <Users size={14} className="text-primary-500" />
+                <Users size={14} className="text-[var(--app-accent)]" />
                 Unirse por código
               </button>
             </div>
@@ -292,7 +292,7 @@ export default function GroupsSection({ sidebarOpen }: Props) {
       {expanded && (
         <div className="space-y-0.5">
           {groups.length === 0 ? (
-            <p className="text-xs text-gray-400 dark:text-slate-600 px-3 py-2">
+            <p className="text-xs text-[var(--app-muted)] px-3 py-2">
               Sin grupos aún
             </p>
           ) : (
@@ -302,14 +302,14 @@ export default function GroupsSection({ sidebarOpen }: Props) {
                 onClick={() => navigate(`/groups/${g.id}`)}
                 className={clsx(
                   "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors w-full text-left",
-                  "text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white"
+                  "text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
                 )}
               >
-                <div className="w-5 h-5 rounded bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center shrink-0">
-                  <Users size={11} className="text-primary-600 dark:text-primary-400" />
+                <div className="w-5 h-5 rounded bg-[var(--app-panel-2)] ring-1 ring-[var(--app-border)] flex items-center justify-center shrink-0">
+                  <Users size={11} className="text-[var(--app-accent)]" />
                 </div>
                 <span className="truncate text-xs font-medium">{g.name}</span>
-                <span className="ml-auto text-xs text-gray-400 dark:text-slate-600 shrink-0">
+                <span className="ml-auto text-xs text-[var(--app-muted)] shrink-0">
                   {g._count?.members ?? ""}
                 </span>
               </button>
