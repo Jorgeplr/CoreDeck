@@ -21,11 +21,11 @@
 }
 
 :root {
-  --app-bg: #f6f2ec;
-  --app-bg-2: #f0ebe4;
-  --app-panel: #ffffff;
-  --app-panel-2: #fbf7f2;
-  --app-border: #e6dfd6;
+  --app-bg: #f0ece6;
+  --app-bg-2: #e9e2d9;
+  --app-panel: #f7f1e8;
+  --app-panel-2: #f2eadf;
+  --app-border: #dfd6ca;
   --app-text: #1f1a14;
   --app-muted: #6b6258;
   --app-accent: #0ea5a4;
@@ -64,9 +64,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: var(--app-text);
   background:
-    radial-gradient(1200px 520px at 85% -10%, rgba(14, 165, 164, 0.18), transparent 60%),
-    radial-gradient(900px 480px at -15% 10%, rgba(245, 158, 11, 0.18), transparent 55%),
-    linear-gradient(180deg, #faf7f2 0%, #f2ede5 100%);
+    radial-gradient(1200px 520px at 85% -10%, rgba(14, 165, 164, 0.16), transparent 60%),
+    radial-gradient(900px 480px at -15% 10%, rgba(245, 158, 11, 0.14), transparent 55%),
+    linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-2) 100%);
   background-attachment: fixed;
 }
 
