@@ -22,6 +22,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Create uploads directory for local file attachments
 RUN mkdir -p /app/uploads
@@ -32,4 +33,4 @@ ENV HOSTNAME="0.0.0.0"
 ENV UPLOAD_DIR=/app/uploads
 
 # Run migrations then start the server
-CMD bunx prisma migrate deploy && node server.js
+CMD node node_modules/prisma/build/index.js migrate deploy && node server.js
