@@ -3,6 +3,8 @@ import { withAuth } from "@/lib/middleware";
 import { prisma } from "@/lib/prisma";
 import { createCommentSchema } from "@/lib/validation";
 import { sendMentionEmail } from "@/lib/emailService";
+import { createNotification, createNotificationsForUsers } from "@/lib/notificationService";
+import { fireAndForgetWebhook } from "@/lib/webhookDispatcher";
 
 type Params = { ticketId: string };
 
@@ -58,6 +60,35 @@ export const POST = withAuth<Promise<Params>>(async (req: NextRequest, { params,
     },
   });
 
+  // Mark first response for SLA tracking — only if commenter is not the creator
+  if (!ticket.firstResponseAt && ticket.createdById !== user.sub) {
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { firstResponseAt: new Date() },
+    });
+  }
+
+  // Notify the creator (and assignee if different) when someone else comments
+  const recipients = new Set<string>();
+  if (ticket.createdById !== user.sub) recipients.add(ticket.createdById);
+  if (ticket.assignedToId && ticket.assignedToId !== user.sub) recipients.add(ticket.assignedToId);
+  if (recipients.size > 0) {
+    createNotificationsForUsers([...recipients], {
+      type: "TICKET_COMMENTED",
+      title: `Nuevo comentario en "${ticket.title}"`,
+      body: parsed.data.content.slice(0, 200),
+      ticketId,
+      link: `/flow/tickets/${ticketId}`,
+    });
+  }
+
+  fireAndForgetWebhook({
+    event: "ticket.commented",
+    groupId: ticket.groupId,
+    userId: user.sub,
+    payload: { ticketId, comment: { id: comment.id, content: comment.content, createdAt: comment.createdAt } },
+  });
+
   // Process @mentions — fire-and-forget
   const mentionedUsernames = [...parsed.data.content.matchAll(/@([\w-]+)/g)].map((m) => m[1]);
   if (mentionedUsernames.length > 0) {
@@ -68,12 +99,20 @@ export const POST = withAuth<Promise<Params>>(async (req: NextRequest, { params,
       .findMany({
         where: {
           username: { in: mentionedUsernames },
-          id: { not: user.sub }, // Don't notify self
+          id: { not: user.sub },
         },
-        select: { email: true },
+        select: { id: true, email: true },
       })
       .then((mentioned) => {
-        for (const { email } of mentioned) {
+        for (const { id, email } of mentioned) {
+          createNotification({
+            userId: id,
+            type: "TICKET_MENTIONED",
+            title: `${authorName} te mencionó`,
+            body: preview,
+            ticketId,
+            link: `/flow/tickets/${ticketId}`,
+          });
           sendMentionEmail(email, authorName, ticket.title, ticketId, preview).catch((err) =>
             console.error("[mentions] email failed:", err)
           );

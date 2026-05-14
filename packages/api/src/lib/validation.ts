@@ -64,6 +64,7 @@ export const createTicketSchema = z.object({
   dueDate: z.string().datetime().optional(),
   assignedToId: z.string().optional(),
   groupId: z.string().optional(),
+  parentId: z.string().optional(),
   labelIds: z.array(z.string()).optional(),
 });
 
@@ -123,4 +124,53 @@ export const updateReminderSchema = z.object({
   description: z.string().optional(),
   dueAt: z.string().datetime().optional(),
   status: z.enum(["PENDING", "NOTIFIED", "DISMISSED", "DONE"]).optional(),
+});
+
+// Time tracking
+export const startTimeEntrySchema = z.object({
+  note: z.string().max(500).optional(),
+});
+
+export const stopTimeEntrySchema = z.object({
+  note: z.string().max(500).optional(),
+});
+
+// SLA policies
+export const slaPolicySchema = z.object({
+  groupId: z.string().optional(),
+  priority: z.enum(["CRITICAL", "URGENT", "NORMAL", "LOW"]),
+  firstResponseMinutes: z.number().int().positive().max(60 * 24 * 30),
+  resolutionMinutes: z.number().int().positive().max(60 * 24 * 90),
+});
+
+export const updateSlaPolicySchema = slaPolicySchema.partial().omit({ groupId: true });
+
+// Webhooks
+export const WEBHOOK_EVENTS = [
+  "ticket.created",
+  "ticket.updated",
+  "ticket.status_changed",
+  "ticket.assigned",
+  "ticket.deleted",
+  "ticket.commented",
+  "ticket.sla_breached",
+] as const;
+
+export const webhookEventSchema = z.enum(WEBHOOK_EVENTS);
+
+export const createWebhookSchema = z.object({
+  name: z.string().min(1).max(80),
+  url: z.string().url().max(500),
+  events: z.array(webhookEventSchema).min(1),
+  groupId: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+export const updateWebhookSchema = createWebhookSchema.partial();
+
+// Vault sharing
+export const createVaultShareSchema = z.object({
+  sharedWithUserId: z.string().min(1),
+  passwordEncrypted: z.string().min(1),
+  iv: z.string().min(1),
 });

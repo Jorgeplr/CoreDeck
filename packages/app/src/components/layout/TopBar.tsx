@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import SearchModal from "@/components/search/SearchModal";
+import NotificationsBell from "@/modules/notifications/components/NotificationsBell";
 
 export default function TopBar() {
   const { theme, toggleTheme } = useUiStore();
@@ -35,7 +36,8 @@ export default function TopBar() {
           <kbd className="ml-2 text-xs bg-white/70 dark:bg-white/10 px-2 py-0.5 rounded-full font-mono text-[var(--app-muted)]">⌘K</kbd>
         </button>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <NotificationsBell />
           <button
             onClick={toggleTheme}
             className="p-2 rounded-full text-[var(--app-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] transition-colors"

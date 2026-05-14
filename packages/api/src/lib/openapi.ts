@@ -24,6 +24,14 @@ import {
   updateNoteSchema,
   createReminderSchema,
   updateReminderSchema,
+  startTimeEntrySchema,
+  stopTimeEntrySchema,
+  slaPolicySchema,
+  updateSlaPolicySchema,
+  createWebhookSchema,
+  updateWebhookSchema,
+  createVaultShareSchema,
+  WEBHOOK_EVENTS,
 } from "./validation";
 
 extendZodWithOpenApi(z);
@@ -1052,6 +1060,393 @@ registry.registerPath({
   },
 });
 
+// ─── New response shapes ───────────────────────────────────────────────────
+const Notification = registry.register(
+  "Notification",
+  z.object({
+    id: z.string(),
+    userId: z.string(),
+    type: z.enum([
+      "TICKET_ASSIGNED",
+      "TICKET_MENTIONED",
+      "TICKET_COMMENTED",
+      "TICKET_DUE_SOON",
+      "REMINDER_DUE",
+      "SLA_BREACHED",
+      "VAULT_SHARED",
+    ]),
+    title: z.string(),
+    body: z.string().nullable().optional(),
+    link: z.string().nullable().optional(),
+    ticketId: z.string().nullable().optional(),
+    readAt: z.string().datetime().nullable().optional(),
+    createdAt: z.string().datetime(),
+  })
+);
+
+const TimeEntry = registry.register(
+  "TimeEntry",
+  z.object({
+    id: z.string(),
+    ticketId: z.string(),
+    userId: z.string(),
+    startedAt: z.string().datetime(),
+    endedAt: z.string().datetime().nullable().optional(),
+    durationSec: z.number().int().nullable().optional(),
+    note: z.string().nullable().optional(),
+    createdAt: z.string().datetime(),
+  })
+);
+
+const SlaPolicy = registry.register(
+  "SlaPolicy",
+  z.object({
+    id: z.string(),
+    groupId: z.string().nullable().optional(),
+    priority: z.enum(["CRITICAL", "URGENT", "NORMAL", "LOW"]),
+    firstResponseMinutes: z.number().int(),
+    resolutionMinutes: z.number().int(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+);
+
+const Webhook = registry.register(
+  "Webhook",
+  z.object({
+    id: z.string(),
+    userId: z.string(),
+    groupId: z.string().nullable().optional(),
+    name: z.string(),
+    url: z.string(),
+    secret: z.string(),
+    events: z.string(),
+    isActive: z.boolean(),
+    lastFiredAt: z.string().datetime().nullable().optional(),
+    lastStatus: z.number().int().nullable().optional(),
+    failureCount: z.number().int(),
+    createdAt: z.string().datetime(),
+  })
+);
+
+const VaultShare = registry.register(
+  "VaultShare",
+  z.object({
+    id: z.string(),
+    entryId: z.string(),
+    sharedWithUserId: z.string(),
+    sharedByUserId: z.string(),
+    iv: z.string(),
+    passwordEncrypted: z.string(),
+    createdAt: z.string().datetime(),
+  })
+);
+
+registry.register("StartTimeEntryRequest", startTimeEntrySchema);
+registry.register("StopTimeEntryRequest", stopTimeEntrySchema);
+registry.register("SlaPolicyRequest", slaPolicySchema);
+registry.register("UpdateSlaPolicyRequest", updateSlaPolicySchema);
+registry.register("CreateWebhookRequest", createWebhookSchema);
+registry.register("UpdateWebhookRequest", updateWebhookSchema);
+registry.register("CreateVaultShareRequest", createVaultShareSchema);
+
+// ─── Paths: Notifications ──────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/notifications",
+  tags: ["Notifications"],
+  summary: "Listar notificaciones del usuario",
+  security: secured,
+  request: {
+    query: z.object({
+      unreadOnly: z.enum(["true", "false"]).optional(),
+      limit: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Notificaciones + contador no leídas",
+      ...jsonBody(z.object({ items: z.array(Notification), unreadCount: z.number().int() })),
+    },
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/notifications",
+  tags: ["Notifications"],
+  summary: "Limpiar notificaciones leídas (>30 días)",
+  security: secured,
+  responses: { 200: { description: "Limpieza ejecutada" } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/notifications/{id}",
+  tags: ["Notifications"],
+  summary: "Marcar notificación como leída",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Marcada" }, 404: errorResponses[404] },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/notifications/{id}",
+  tags: ["Notifications"],
+  summary: "Eliminar notificación",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Eliminada" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/notifications/read-all",
+  tags: ["Notifications"],
+  summary: "Marcar todas como leídas",
+  security: secured,
+  responses: {
+    200: { description: "Resultado", ...jsonBody(z.object({ ok: z.boolean(), updated: z.number() })) },
+  },
+});
+
+// ─── Paths: Time Entries ───────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/flow/tickets/{ticketId}/time-entries",
+  tags: ["TimeTracking"],
+  summary: "Listar entradas de tiempo del ticket",
+  security: secured,
+  request: { params: z.object({ ticketId: z.string() }) },
+  responses: {
+    200: {
+      description: "Entradas + total en segundos",
+      ...jsonBody(z.object({ items: z.array(TimeEntry), totalSec: z.number().int() })),
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/flow/tickets/{ticketId}/time-entries",
+  tags: ["TimeTracking"],
+  summary: "Iniciar timer en un ticket",
+  description: "Si el usuario ya tenía un timer abierto en el mismo ticket, se cierra automáticamente.",
+  security: secured,
+  request: {
+    params: z.object({ ticketId: z.string() }),
+    body: jsonBody(startTimeEntrySchema),
+  },
+  responses: { 201: { description: "Timer iniciado", ...jsonBody(TimeEntry) } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/flow/time-entries/{id}",
+  tags: ["TimeTracking"],
+  summary: "Detener timer",
+  security: secured,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: jsonBody(stopTimeEntrySchema),
+  },
+  responses: { 200: { description: "Timer detenido", ...jsonBody(TimeEntry) } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/flow/time-entries/{id}",
+  tags: ["TimeTracking"],
+  summary: "Eliminar entrada de tiempo",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Eliminada" } },
+});
+
+// ─── Paths: SLA ────────────────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/sla/policies",
+  tags: ["SLA"],
+  summary: "Listar políticas SLA",
+  description: "Sin groupId → globales por prioridad. Con groupId → políticas del grupo.",
+  security: secured,
+  request: { query: z.object({ groupId: z.string().optional() }) },
+  responses: { 200: { description: "Políticas", ...jsonBody(z.array(SlaPolicy)) } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/sla/policies",
+  tags: ["SLA"],
+  summary: "Crear o actualizar política SLA (upsert por grupo+prioridad)",
+  security: secured,
+  request: { body: jsonBody(slaPolicySchema) },
+  responses: { 201: { description: "Política creada/actualizada", ...jsonBody(SlaPolicy) } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/sla/policies/{id}",
+  tags: ["SLA"],
+  summary: "Actualizar política SLA",
+  security: secured,
+  request: {
+    params: z.object({ id: z.string() }),
+    body: jsonBody(updateSlaPolicySchema),
+  },
+  responses: { 200: { description: "Actualizada", ...jsonBody(SlaPolicy) } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/sla/policies/{id}",
+  tags: ["SLA"],
+  summary: "Eliminar política SLA",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Eliminada" } },
+});
+
+// ─── Paths: Webhooks ───────────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/webhooks",
+  tags: ["Webhooks"],
+  summary: "Listar webhooks",
+  description: `Eventos soportados: ${WEBHOOK_EVENTS.join(", ")}.`,
+  security: secured,
+  request: { query: z.object({ groupId: z.string().optional() }) },
+  responses: { 200: { description: "Webhooks", ...jsonBody(z.array(Webhook)) } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/webhooks",
+  tags: ["Webhooks"],
+  summary: "Crear webhook (genera secret HMAC SHA-256)",
+  security: secured,
+  request: { body: jsonBody(createWebhookSchema) },
+  responses: { 201: { description: "Webhook creado", ...jsonBody(Webhook) } },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/webhooks/{id}",
+  tags: ["Webhooks"],
+  summary: "Actualizar webhook",
+  security: secured,
+  request: { params: z.object({ id: z.string() }), body: jsonBody(updateWebhookSchema) },
+  responses: { 200: { description: "Actualizado", ...jsonBody(Webhook) } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/webhooks/{id}",
+  tags: ["Webhooks"],
+  summary: "Eliminar webhook",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: { 200: { description: "Eliminado" } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/webhooks/{id}/test",
+  tags: ["Webhooks"],
+  summary: "Disparar evento de prueba",
+  security: secured,
+  request: { params: z.object({ id: z.string() }) },
+  responses: {
+    200: {
+      description: "Resultado del envío",
+      ...jsonBody(z.object({ status: z.number(), error: z.string().nullable() })),
+    },
+  },
+});
+
+// ─── Paths: Export ─────────────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/flow/tickets/export",
+  tags: ["Export"],
+  summary: "Exportar tickets a CSV",
+  security: secured,
+  request: {
+    query: z.object({
+      status: z.string().optional(),
+      priority: z.string().optional(),
+      scope: z.enum(["INDIVIDUAL", "GROUP"]).optional(),
+      groupId: z.string().optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "CSV",
+      content: { "text/csv": { schema: z.string() } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/vault/export",
+  tags: ["Export"],
+  summary: "Exportar vault (entradas cifradas)",
+  security: secured,
+  responses: {
+    200: {
+      description: "JSON con entradas cifradas (el cliente las descifra localmente)",
+      content: { "application/json": { schema: z.object({}).passthrough() } },
+    },
+  },
+});
+
+// ─── Paths: Vault Sharing ──────────────────────────────────────────────────
+registry.registerPath({
+  method: "get",
+  path: "/api/vault/{entryId}/shares",
+  tags: ["VaultSharing"],
+  summary: "Listar destinatarios de una entrada compartida",
+  security: secured,
+  request: { params: z.object({ entryId: z.string() }) },
+  responses: { 200: { description: "Compartidos", ...jsonBody(z.array(VaultShare)) } },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/vault/{entryId}/shares",
+  tags: ["VaultSharing"],
+  summary: "Compartir entrada con otro usuario",
+  description: "El cliente debe re-cifrar el secreto con una clave que el destinatario pueda derivar.",
+  security: secured,
+  request: {
+    params: z.object({ entryId: z.string() }),
+    body: jsonBody(createVaultShareSchema),
+  },
+  responses: { 201: { description: "Compartido", ...jsonBody(VaultShare) } },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/vault/shares/{shareId}",
+  tags: ["VaultSharing"],
+  summary: "Revocar share",
+  security: secured,
+  request: { params: z.object({ shareId: z.string() }) },
+  responses: { 200: { description: "Revocado" } },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/vault/shared-with-me",
+  tags: ["VaultSharing"],
+  summary: "Entradas compartidas conmigo",
+  security: secured,
+  responses: { 200: { description: "Compartidos recibidos", ...jsonBody(z.array(VaultShare)) } },
+});
+
 // ─── Generator ─────────────────────────────────────────────────────────────
 export function getOpenApiSpec() {
   const generator = new OpenApiGeneratorV31(registry.definitions);
@@ -1077,6 +1472,12 @@ export function getOpenApiSpec() {
       { name: "Context", description: "Notas y recordatorios" },
       { name: "Attachments", description: "Subida y descarga de archivos" },
       { name: "Search", description: "Búsqueda global" },
+      { name: "Notifications", description: "Notificaciones in-app" },
+      { name: "TimeTracking", description: "Time tracking en tickets" },
+      { name: "SLA", description: "Políticas SLA por grupo/prioridad" },
+      { name: "Webhooks", description: "Webhooks salientes con firma HMAC" },
+      { name: "Export", description: "Exportar tickets/vault" },
+      { name: "VaultSharing", description: "Compartir entradas de vault uno a uno" },
     ],
   });
 }

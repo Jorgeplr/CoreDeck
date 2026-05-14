@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware";
 import { prisma } from "@/lib/prisma";
 import { updateTicketSchema } from "@/lib/validation";
+import { createNotification } from "@/lib/notificationService";
+import { fireAndForgetWebhook } from "@/lib/webhookDispatcher";
 
 type Params = { ticketId: string };
 
@@ -113,6 +115,41 @@ export const PATCH = withAuth<Promise<Params>>(async (req: NextRequest, { params
     });
   }
 
+  // Notify newly assigned user
+  const newAssignee = ticketData.assignedToId;
+  if (newAssignee && typeof newAssignee === "string" && newAssignee !== existing.assignedToId && newAssignee !== user.sub) {
+    createNotification({
+      userId: newAssignee,
+      type: "TICKET_ASSIGNED",
+      title: "Te asignaron un ticket",
+      body: updated.title,
+      ticketId,
+      link: `/flow/tickets/${ticketId}`,
+    });
+    fireAndForgetWebhook({
+      event: "ticket.assigned",
+      groupId: updated.groupId,
+      userId: user.sub,
+      payload: { ticket: updated, previousAssigneeId: existing.assignedToId, newAssigneeId: newAssignee },
+    });
+  }
+
+  if (ticketData.status && ticketData.status !== existing.status) {
+    fireAndForgetWebhook({
+      event: "ticket.status_changed",
+      groupId: updated.groupId,
+      userId: user.sub,
+      payload: { ticket: updated, oldStatus: existing.status, newStatus: ticketData.status },
+    });
+  }
+
+  fireAndForgetWebhook({
+    event: "ticket.updated",
+    groupId: updated.groupId,
+    userId: user.sub,
+    payload: { ticket: updated },
+  });
+
   return NextResponse.json(updated);
 });
 
@@ -125,5 +162,13 @@ export const DELETE = withAuth<Promise<Params>>(async (_req, { params, user }) =
   }
 
   await prisma.ticket.delete({ where: { id: ticketId } });
+
+  fireAndForgetWebhook({
+    event: "ticket.deleted",
+    groupId: ticket.groupId,
+    userId: user.sub,
+    payload: { ticketId, title: ticket.title },
+  });
+
   return NextResponse.json({ message: "Ticket deleted" });
 });

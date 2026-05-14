@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Lock, KeyRound, User, Users } from "lucide-react";
+import { Plus, Search, Lock, KeyRound, User, Users, Share2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useVaultStore } from "@/store/vaultStore";
 import { vaultApi } from "../api/vaultApi";
+import { vaultShareApi } from "../api/vaultShareApi";
 import { groupsApi } from "@/modules/groups/api/groupsApi";
 import PasswordCard from "../components/PasswordCard";
 import PasswordForm from "../components/PasswordForm";
+import SharedWithMeCard from "../components/SharedWithMeCard";
 import type { Group } from "@/types";
 import clsx from "clsx";
 
-type VaultTab = "personal" | string; // string = groupId
+type VaultTab = "personal" | "shared" | string; // string = groupId
 
 export default function VaultPage() {
   const isUnlocked = useVaultStore((s) => s.isUnlocked);
@@ -36,6 +38,12 @@ export default function VaultPage() {
       activeTab === "personal"
         ? vaultApi.list("PERSONAL")
         : vaultApi.list("GROUP", activeTab),
+    enabled: isUnlocked && activeTab !== "shared",
+  });
+
+  const { data: sharedWithMe = [], isLoading: sharedLoading } = useQuery({
+    queryKey: ["vault", "shared-with-me"],
+    queryFn: () => vaultShareApi.sharedWithMe(),
     enabled: isUnlocked,
   });
 
@@ -115,6 +123,23 @@ export default function VaultPage() {
           <User size={15} />
           Personal
         </button>
+        <button
+          onClick={() => setActiveTab("shared")}
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all border",
+            activeTab === "shared"
+              ? "bg-gradient-to-r from-[var(--app-accent)] to-[var(--app-accent-2)] text-white border-transparent shadow-sm"
+              : "bg-[var(--app-panel-2)] text-[var(--app-muted)] border-[var(--app-border)] hover:text-[var(--app-text)]"
+          )}
+        >
+          <Share2 size={15} />
+          Compartido conmigo
+          {sharedWithMe.length > 0 && (
+            <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">
+              {sharedWithMe.length}
+            </span>
+          )}
+        </button>
         {groups.map((group) => (
           <button
             key={group.id}
@@ -153,7 +178,30 @@ export default function VaultPage() {
       )}
 
       {/* Content */}
-      {isLoading ? (
+      {activeTab === "shared" ? (
+        sharedLoading ? (
+          <div className="flex items-center justify-center py-20 text-[var(--app-muted)]">Cargando…</div>
+        ) : sharedWithMe.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--app-panel-2)] ring-1 ring-[var(--app-border)] flex items-center justify-center">
+              <Share2 size={24} className="text-[var(--app-muted)]" />
+            </div>
+            <p className="text-sm text-[var(--app-muted)]">
+              Nadie te ha compartido contraseñas aún.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+            {sharedWithMe
+              .filter((s) =>
+                (s.entry?.title ?? "").toLowerCase().includes(search.toLowerCase())
+              )
+              .map((s) => (
+                <SharedWithMeCard key={s.id} share={s} />
+              ))}
+          </div>
+        )
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-20 text-[var(--app-muted)]">Cargando...</div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">

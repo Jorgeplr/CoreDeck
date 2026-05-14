@@ -6,7 +6,10 @@ import { useAuthStore } from "@/store/authStore";
 import { useVaultStore } from "@/store/vaultStore";
 import { api } from "@/lib/api";
 import { deriveMasterKey, encryptField, decryptField } from "@/lib/crypto";
+import { encryptPrivateKey } from "@/lib/sharedCrypto";
 import { vaultApi } from "@/modules/vault/api/vaultApi";
+import { vaultShareApi } from "@/modules/vault/api/vaultShareApi";
+import WebhooksPanel from "@/modules/webhooks/components/WebhooksPanel";
 
 interface UpdateProfilePayload {
   displayName?: string;
@@ -44,6 +47,7 @@ export default function ProfilePage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const accessToken = useAuthStore((s) => s.accessToken);
   const masterKey = useVaultStore((s) => s.masterKey);
+  const privateKey = useVaultStore((s) => s.privateKey);
 
   const [profileForm, setProfileForm] = useState({
     displayName: user?.displayName ?? "",
@@ -126,6 +130,17 @@ export default function ProfilePage() {
           })
         );
         payload.reEncryptedEntries = reEncryptedEntries;
+
+        // Also re-encrypt the X25519 private key with the new master key so
+        // vault sharing keeps working after the password change.
+        if (privateKey) {
+          const reEnc = await encryptPrivateKey(privateKey, newKey);
+          await vaultShareApi.uploadKeypair({
+            publicKey: reEnc.publicKeyB64,
+            encryptedPrivateKey: reEnc.encryptedPrivateKey,
+            privateKeyIv: reEnc.privateKeyIv,
+          });
+        }
       } catch {
         setPwMsg({ type: "error", msg: "Error al re-encriptar el vault. Asegúrate de que está desbloqueado." });
         return;
@@ -271,6 +286,9 @@ export default function ProfilePage() {
           </button>
         </form>
       </div>
+
+      {/* Personal webhooks */}
+      <WebhooksPanel canManage={true} />
     </div>
   );
 }

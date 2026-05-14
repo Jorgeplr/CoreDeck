@@ -21,22 +21,30 @@ model User {
   emailVerified       Boolean   @default(false)
   emailVerifyToken    String?   @unique @db.VarChar(200)
   emailVerifyExpires  DateTime?
+  publicKey           String?   @db.VarChar(100)
+  encryptedPrivateKey String?   @db.VarChar(500)
+  privateKeyIv        String?   @db.VarChar(50)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  refreshTokens      RefreshToken[]
-  groupMembers       GroupMember[]
-  vaultEntries       VaultEntry[]
-  assignedTickets    Ticket[]          @relation("AssignedTickets")
-  createdTickets     Ticket[]          @relation("CreatedTickets")
-  ticketHistory      TicketHistory[]
-  ticketComments     TicketComment[]
-  notes              Note[]
-  reminders          Reminder[]
-  attachments        Attachment[]
-  ticketTemplates    TicketTemplate[]
-  recurringTickets   RecurringTicket[] @relation("RecurringCreated")
-  recurringAssigned  RecurringTicket[] @relation("RecurringAssigned")
+  refreshTokens       RefreshToken[]
+  groupMembers        GroupMember[]
+  vaultEntries        VaultEntry[]
+  assignedTickets     Ticket[]          @relation("AssignedTickets")
+  createdTickets      Ticket[]          @relation("CreatedTickets")
+  ticketHistory       TicketHistory[]
+  ticketComments      TicketComment[]
+  notes               Note[]
+  reminders           Reminder[]
+  attachments         Attachment[]
+  ticketTemplates     TicketTemplate[]
+  recurringTickets    RecurringTicket[] @relation("RecurringCreated")
+  recurringAssigned   RecurringTicket[] @relation("RecurringAssigned")
+  notifications       Notification[]
+  timeEntries         TimeEntry[]
+  webhooks            Webhook[]
+  vaultSharesReceived VaultShare[]      @relation("VaultSharedWith")
+  vaultSharesGiven    VaultShare[]      @relation("VaultSharedBy")
 
   @@map("users")
 }
@@ -72,6 +80,8 @@ model Group {
   notes            Note[]
   ticketTemplates  TicketTemplate[]
   recurringTickets RecurringTicket[]
+  slaPolicies      SlaPolicy[]
+  webhooks         Webhook[]
 
   @@map("groups")
 }
@@ -114,8 +124,9 @@ model VaultEntry {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user   User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group  Group?       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  shares VaultShare[]
 
   @@index([userId])
   @@index([groupId])
@@ -130,34 +141,46 @@ enum VaultEntryScope {
 // ─── FLOW ──────────────────────────────────────────────────────────────────────
 
 model Ticket {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?        @db.Text
-  status       TicketStatus   @default(OPEN)
-  priority     TicketPriority @default(NORMAL)
-  scope        TicketScope    @default(INDIVIDUAL)
-  dueDate      DateTime?
-  dueNotifiedAt DateTime?
-  createdById  String
-  assignedToId String?
-  groupId      String?
-  templateId   String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                          String         @id @default(cuid())
+  title                       String
+  description                 String?        @db.Text
+  status                      TicketStatus   @default(OPEN)
+  priority                    TicketPriority @default(NORMAL)
+  scope                       TicketScope    @default(INDIVIDUAL)
+  dueDate                     DateTime?
+  dueNotifiedAt               DateTime?
+  createdById                 String
+  assignedToId                String?
+  groupId                     String?
+  templateId                  String?
+  parentId                    String?
+  firstResponseAt             DateTime?
+  slaFirstResponseBreachedAt  DateTime?
+  slaResolutionBreachedAt     DateTime?
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
 
-  createdBy  User            @relation("CreatedTickets", fields: [createdById], references: [id])
-  assignedTo User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  group      Group?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy  User    @relation("CreatedTickets", fields: [createdById], references: [id])
+  assignedTo User?   @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  group      Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  parent     Ticket? @relation("TicketSubtasks", fields: [parentId], references: [id], onDelete: SetNull)
 
-  history     TicketHistory[]
-  labels      TicketLabel[]
-  comments    TicketComment[]
-  attachments Attachment[]
+  subtasks      Ticket[]        @relation("TicketSubtasks")
+  history       TicketHistory[]
+  labels        TicketLabel[]
+  comments      TicketComment[]
+  attachments   Attachment[]
+  timeEntries   TimeEntry[]
+  notifications Notification[]
 
   @@index([createdById])
   @@index([assignedToId])
   @@index([groupId])
   @@index([status])
+  @@index([dueDate])
+  @@index([groupId, status])
+  @@index([parentId])
+  @@fulltext([title, description])
   @@map("tickets")
 }
 
@@ -250,6 +273,8 @@ model Note {
 
   @@index([userId])
   @@index([groupId])
+  @@index([groupId, updatedAt])
+  @@fulltext([title, content])
   @@map("notes")
 }
 
@@ -297,6 +322,7 @@ model Attachment {
 
   @@index([ticketId])
   @@index([noteId])
+  @@index([uploadedById])
   @@map("attachments")
 }
 
@@ -348,6 +374,120 @@ model RecurringTicket {
   @@index([createdById])
   @@index([groupId])
   @@map("recurring_tickets")
+}
+
+// ─── NOTIFICATIONS ─────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?          @db.Text
+  link      String?
+  ticketId  String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticket Ticket? @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  TICKET_ASSIGNED
+  TICKET_MENTIONED
+  TICKET_COMMENTED
+  TICKET_DUE_SOON
+  REMINDER_DUE
+  SLA_BREACHED
+  VAULT_SHARED
+}
+
+// ─── TIME TRACKING ─────────────────────────────────────────────────────────
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  ticketId    String
+  userId      String
+  startedAt   DateTime
+  endedAt     DateTime?
+  durationSec Int?
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([userId])
+  @@map("time_entries")
+}
+
+// ─── SLA POLICIES ──────────────────────────────────────────────────────────
+
+model SlaPolicy {
+  id                   String         @id @default(cuid())
+  groupId              String?
+  priority             TicketPriority
+  firstResponseMinutes Int
+  resolutionMinutes    Int
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, priority])
+  @@map("sla_policies")
+}
+
+// ─── WEBHOOKS ──────────────────────────────────────────────────────────────
+
+model Webhook {
+  id           String    @id @default(cuid())
+  userId       String
+  groupId      String?
+  name         String
+  url          String    @db.VarChar(500)
+  secret       String    @db.VarChar(200)
+  events       String    @db.Text
+  isActive     Boolean   @default(true)
+  lastFiredAt  DateTime?
+  lastStatus   Int?
+  failureCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([userId])
+  @@map("webhooks")
+}
+
+// ─── VAULT SHARING ─────────────────────────────────────────────────────────
+
+model VaultShare {
+  id                String   @id @default(cuid())
+  entryId           String
+  sharedWithUserId  String
+  sharedByUserId    String
+  passwordEncrypted String   @db.Text
+  iv                String
+  createdAt         DateTime @default(now())
+
+  entry          VaultEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  sharedWithUser User       @relation("VaultSharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedByUser   User       @relation("VaultSharedBy", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, sharedWithUserId])
+  @@index([sharedWithUserId])
+  @@map("vault_shares")
 }
 
 // ─── CRON LOCKS ───────────────────────────────────────────────────────────────

@@ -2,8 +2,14 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { deriveMasterKey } from "@/lib/crypto";
+import {
+  generateKeypair,
+  encryptPrivateKey,
+  decryptPrivateKey,
+} from "@/lib/sharedCrypto";
 import { useAuthStore } from "@/store/authStore";
 import { useVaultStore } from "@/store/vaultStore";
+import { vaultShareApi } from "@/modules/vault/api/vaultShareApi";
 
 export default function VaultUnlockPage() {
   const [masterPassword, setMasterPassword] = useState("");
@@ -21,7 +27,31 @@ export default function VaultUnlockPage() {
     setError("");
     try {
       const key = await deriveMasterKey(masterPassword, user.id);
-      unlock(key);
+
+      // Load existing keypair or provision a new one. Decryption failure here is
+      // a strong signal that the master password is wrong.
+      let privateKey: Uint8Array | null = null;
+      const kp = await vaultShareApi.getMyKeypair();
+      if (kp.publicKey && kp.encryptedPrivateKey && kp.privateKeyIv) {
+        try {
+          privateKey = await decryptPrivateKey(kp.encryptedPrivateKey, kp.privateKeyIv, key);
+        } catch {
+          setError("Contraseña maestra incorrecta.");
+          setLoading(false);
+          return;
+        }
+      } else {
+        const fresh = generateKeypair();
+        const enc = await encryptPrivateKey(fresh.privateKey, key);
+        await vaultShareApi.uploadKeypair({
+          publicKey: enc.publicKeyB64,
+          encryptedPrivateKey: enc.encryptedPrivateKey,
+          privateKeyIv: enc.privateKeyIv,
+        });
+        privateKey = fresh.privateKey;
+      }
+
+      unlock(key, privateKey);
       navigate("/vault");
     } catch {
       setError("No se pudo derivar la clave maestra");

@@ -6,6 +6,8 @@ import { groupsApi } from "../api/groupsApi";
 import { useAuthStore } from "@/store/authStore";
 import type { GroupRole } from "@/types";
 import clsx from "clsx";
+import SlaPoliciesPanel from "@/modules/sla/components/SlaPoliciesPanel";
+import WebhooksPanel from "@/modules/webhooks/components/WebhooksPanel";
 
 const ROLE_LABELS: Record<GroupRole, string> = {
   OWNER: "Propietario",
@@ -60,6 +62,7 @@ export default function GroupDetailPage() {
 
   const myMembership = members.find((m) => m.userId === currentUser?.id);
   const isOwner = myMembership?.role === "OWNER";
+  const canManage = isOwner || myMembership?.role === "ADMIN";
 
   const deleteMutation = useMutation({
     mutationFn: () => groupsApi.deleteGroup(id!),
@@ -196,6 +199,12 @@ export default function GroupDetailPage() {
           })}
         </div>
       </div>
+
+      {/* SLA */}
+      {id && <SlaPoliciesPanel groupId={id} canManage={canManage} />}
+
+      {/* Webhooks */}
+      {id && <WebhooksPanel groupId={id} canManage={canManage} />}
 
       {/* Danger zone */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/30 p-5">

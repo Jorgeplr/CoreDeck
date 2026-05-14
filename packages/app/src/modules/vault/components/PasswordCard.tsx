@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Eye, EyeOff, Copy, Check, Trash2, ExternalLink, Globe } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Trash2, ExternalLink, Globe, Share2 } from "lucide-react";
 import { decryptField } from "@/lib/crypto";
 import { useVaultStore } from "@/store/vaultStore";
 import type { VaultEntry } from "@/types";
+import VaultShareModal from "./VaultShareModal";
 
 interface Props {
   entry: VaultEntry;
@@ -44,6 +45,7 @@ export default function PasswordCard({ entry, onDelete }: Props) {
   const [password, setPassword] = useState("••••••••");
   const [copied, setCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const reveal = async () => {
     if (!masterKey) return;
@@ -109,6 +111,15 @@ export default function PasswordCard({ entry, onDelete }: Props) {
           <button onClick={copy} className={iconBtn} title="Copiar contraseña">
             {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
           </button>
+          {entry.scope === "PERSONAL" && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className={iconBtn}
+              title="Compartir con otro usuario"
+            >
+              <Share2 size={14} />
+            </button>
+          )}
           {confirmDelete ? (
             <div className="flex items-center gap-1 ml-1">
               <button
@@ -135,6 +146,8 @@ export default function PasswordCard({ entry, onDelete }: Props) {
           )}
         </div>
       </div>
+
+      {shareOpen && <VaultShareModal entry={entry} onClose={() => setShareOpen(false)} />}
     </div>
   );
 }

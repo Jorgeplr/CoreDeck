@@ -134,3 +134,88 @@ export interface Reminder {
   createdAt: string;
   updatedAt: string;
 }
+
+// Notifications
+export type NotificationType =
+  | "TICKET_ASSIGNED"
+  | "TICKET_MENTIONED"
+  | "TICKET_COMMENTED"
+  | "TICKET_DUE_SOON"
+  | "REMINDER_DUE"
+  | "SLA_BREACHED"
+  | "VAULT_SHARED";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link: string | null;
+  ticketId: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+// Time tracking
+export interface TimeEntry {
+  id: string;
+  ticketId: string;
+  userId: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationSec: number | null;
+  note: string | null;
+  createdAt: string;
+  user?: Pick<User, "id" | "username" | "displayName" | "avatarUrl">;
+}
+
+// SLA
+export interface SlaPolicy {
+  id: string;
+  groupId: string | null;
+  priority: TicketPriority;
+  firstResponseMinutes: number;
+  resolutionMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Webhooks
+export type WebhookEvent =
+  | "ticket.created"
+  | "ticket.updated"
+  | "ticket.status_changed"
+  | "ticket.assigned"
+  | "ticket.deleted"
+  | "ticket.commented"
+  | "ticket.sla_breached";
+
+export interface Webhook {
+  id: string;
+  userId: string;
+  groupId: string | null;
+  name: string;
+  url: string;
+  secret: string;
+  events: string; // comma-separated WebhookEvent
+  isActive: boolean;
+  lastFiredAt: string | null;
+  lastStatus: number | null;
+  failureCount: number;
+  createdAt: string;
+}
+
+// Vault sharing
+export interface VaultShare {
+  id: string;
+  entryId: string;
+  sharedWithUserId: string;
+  sharedByUserId: string;
+  passwordEncrypted: string;
+  iv: string;
+  createdAt: string;
+  sharedWithUser?: Pick<User, "id" | "username" | "displayName" | "avatarUrl">;
+  sharedByUser?: Pick<User, "id" | "username" | "displayName" | "avatarUrl">;
+  entry?: Pick<VaultEntry, "id" | "title" | "url" | "scope">;
+}

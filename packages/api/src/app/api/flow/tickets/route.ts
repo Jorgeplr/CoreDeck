@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware";
 import { prisma } from "@/lib/prisma";
 import { createTicketSchema } from "@/lib/validation";
+import { createNotification } from "@/lib/notificationService";
+import { fireAndForgetWebhook } from "@/lib/webhookDispatcher";
 
 export const GET = withAuth(async (req: NextRequest, { user }) => {
   const { searchParams } = new URL(req.url);
@@ -77,6 +79,25 @@ export const POST = withAuth(async (req: NextRequest, { user }) => {
       action: "CREATED",
       newValue: ticket.status,
     },
+  });
+
+  // Notify assignee
+  if (ticket.assignedToId && ticket.assignedToId !== user.sub) {
+    createNotification({
+      userId: ticket.assignedToId,
+      type: "TICKET_ASSIGNED",
+      title: "Te asignaron un ticket",
+      body: ticket.title,
+      ticketId: ticket.id,
+      link: `/flow/tickets/${ticket.id}`,
+    });
+  }
+
+  fireAndForgetWebhook({
+    event: "ticket.created",
+    groupId: ticket.groupId,
+    userId: user.sub,
+    payload: { ticket },
   });
 
   return NextResponse.json(ticket, { status: 201 });

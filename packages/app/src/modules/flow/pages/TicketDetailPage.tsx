@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Trash2, Users, UserCheck, UserX, Send } from "lucide-react";
+import { ArrowLeft, Trash2, Users, UserCheck, UserX, Send, Clock } from "lucide-react";
 import AttachmentsPanel from "@/components/attachments/AttachmentsPanel";
+import MarkdownView from "@/components/ui/MarkdownView";
+import TimeTrackingPanel from "../components/TimeTrackingPanel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -30,7 +32,7 @@ const PRIORITY_COLORS: Record<TicketPriority, string> = {
   LOW: "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-400",
 };
 
-type Tab = "comments" | "history" | "details";
+type Tab = "comments" | "history" | "time" | "details";
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,9 +113,10 @@ export default function TicketDetailPage() {
   const isSelfAssigned = ticket.assignedTo?.id === currentUser?.id;
   const selectCls = "px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500";
 
-  const TABS: { key: Tab; label: string; count?: number }[] = [
+  const TABS: { key: Tab; label: string; count?: number; icon?: React.ReactNode }[] = [
     { key: "comments", label: "Comentarios", count: comments.length || undefined },
     { key: "history", label: "Historial" },
+    { key: "time", label: "Tiempo", icon: <Clock size={13} /> },
     { key: "details", label: "Detalles" },
   ];
 
@@ -196,9 +199,7 @@ export default function TicketDetailPage() {
         {ticket.description && (
           <div>
             <h3 className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-2">Descripción</h3>
-            <p className="text-sm text-gray-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-              {ticket.description}
-            </p>
+            <MarkdownView content={ticket.description} className="text-sm" />
           </div>
         )}
 
@@ -285,7 +286,7 @@ export default function TicketDetailPage() {
       {/* Tabs: Comments / History / Details */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col">
         <div className="flex gap-1 px-4 pt-4 border-b border-gray-100 dark:border-slate-700">
-          {TABS.map(({ key, label, count }) => (
+          {TABS.map(({ key, label, count, icon }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -296,6 +297,7 @@ export default function TicketDetailPage() {
                   : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
               )}
             >
+              {icon}
               {label}
               {count !== undefined && (
                 <span className={clsx(
@@ -339,7 +341,12 @@ export default function TicketDetailPage() {
                             ? "bg-primary-600 text-white rounded-tr-sm"
                             : "bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-tl-sm"
                         )}>
-                          {comment.content}
+                          <MarkdownView
+                            content={comment.content}
+                            className={clsx(
+                              isMine && "prose-invert prose-headings:text-white prose-strong:text-white prose-a:text-white"
+                            )}
+                          />
                         </div>
                         <div className={clsx("flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500", isMine && "flex-row-reverse")}>
                           <span className="font-medium">{comment.user.displayName ?? comment.user.username}</span>
@@ -389,6 +396,13 @@ export default function TicketDetailPage() {
         {tab === "history" && (
           <div className="p-4">
             <AuditLog history={history} />
+          </div>
+        )}
+
+        {/* Time tracking tab */}
+        {tab === "time" && id && (
+          <div className="p-4">
+            <TimeTrackingPanel ticketId={id} />
           </div>
         )}
 
