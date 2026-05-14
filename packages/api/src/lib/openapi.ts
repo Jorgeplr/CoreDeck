@@ -1,9 +1,8 @@
 import {
   OpenAPIRegistry,
   OpenApiGeneratorV31,
-  extendZodWithOpenApi,
 } from "@asteasolutions/zod-to-openapi";
-import { z } from "zod";
+import { z } from "@/lib/zod";
 import {
   registerSchema,
   loginSchema,
@@ -33,8 +32,6 @@ import {
   createVaultShareSchema,
   WEBHOOK_EVENTS,
 } from "./validation";
-
-extendZodWithOpenApi(z);
 
 const registry = new OpenAPIRegistry();
 
